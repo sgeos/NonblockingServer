@@ -140,7 +140,7 @@ int main(void)
           {
             FATAL_ERROR("accept");
           }
-          fprintf(stderr, "Connection : host %s, port %hd\n", inet_ntoa (clientname.sin_addr), ntohs (clientname.sin_port));
+          fprintf(stderr, "Connection : host %s, port %hu\n", inet_ntoa (clientname.sin_addr), ntohs (clientname.sin_port));
           FD_SET(new, &active_fd_set);
           FD_SET(new, &write_fd_set);
         }
