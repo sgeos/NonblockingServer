@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -40,30 +39,10 @@
 #include "client.h"
 #include "error.h"
 #include "message.h"
+#include "network.h"
 #include "terminalInput.h"
 
-void writeToServer(int pFileDes, const char *pMessage)
-{
-  int size = write(pFileDes, pMessage, strlen(pMessage) + 1);
-  if (size < 0)
-  {
-    FATAL_ERROR("write");
-  }
-}
-
-int readFromServer(int pSocketFile, char *pBuffer, int pSize)
-{
-  bzero(pBuffer, pSize);
-  int result = read(pSocketFile, pBuffer, pSize - 1);
-  if (result < 0)
-  {
-    return 0;
-    FATAL_ERROR("read");
-  }
-  return result;
-}
-
-int processMessage(int pSocketFile, char *pBuffer)
+int prepareMessage(int pSocketFile, char *pBuffer)
 {
   int done = 0;
   if (0 == strcmp(pBuffer, MESSAGE_EXIT))
@@ -73,11 +52,11 @@ int processMessage(int pSocketFile, char *pBuffer)
   else if (0 == strcmp(pBuffer, MESSAGE_NULL))
   {
     printf("%s %s\n", terminalInputGetPrompt(), MESSAGE_DEFAULT);
-    writeToServer(pSocketFile, MESSAGE_DEFAULT);
+    sendMessage(pSocketFile, MESSAGE_DEFAULT);
   }
   else
   {
-    writeToServer(pSocketFile, pBuffer);
+    sendMessage(pSocketFile, pBuffer);
   }
   terminalInputPrompt();
   return done;
@@ -93,7 +72,7 @@ int processInput(int pSocketFile, char *pBuffer, int pSize)
     switch (c)
     {
       case '\n':
-        done = processMessage(pSocketFile, pBuffer);
+        done = prepareMessage(pSocketFile, pBuffer);
         break;
       case '\b':
       case 127:
@@ -120,7 +99,7 @@ int processInput(int pSocketFile, char *pBuffer, int pSize)
 void processOutput(int pSocket, char *pBuffer, int pSize)
 {
   int outputPrinted = 0;
-  while (readFromServer(pSocket, pBuffer, pSize))
+  while (receiveMessage(pSocket, pBuffer, pSize))
   {
     if (!outputPrinted)
     {
@@ -135,50 +114,17 @@ void processOutput(int pSocket, char *pBuffer, int pSize)
   }
 }
 
-void initSockAddr(struct sockaddr_in *pName, const char *pHostName, uint16_t pPort)
-{
-  struct hostent *hostinfo;
-
-  pName->sin_family = AF_INET;
-  pName->sin_port   = htons(pPort);
-  hostinfo          = gethostbyname(pHostName);
-  if (NULL == hostinfo)
-  {
-    FATAL_ERROR("unknown host");
-  }
-  pName->sin_addr = *(struct in_addr *)hostinfo->h_addr;
-}
-
 int init(client_param_t *pParameters)
 {
-  int result; // socket
-  struct sockaddr_in servername;
-  int status;
+  // create socket and connect to server
+  int socketFile = initClient(pParameters->port, pParameters->host);
 
-  // create socket
-  result = socket(PF_INET, SOCK_STREAM, 0);
-  if (socket < 0)
-  {
-    FATAL_ERROR("socket (client)");
-  }
+  // print host and port
+  printf("Host: %s\n", pParameters->host);
+  printf("Port: %d\n", pParameters->port);
 
-  // connect to server
-  initSockAddr(&servername, pParameters->host, pParameters->port);
-  if (0 > connect(result, (struct sockaddr *)&servername, sizeof(servername)))
-  {
-    FATAL_ERROR("connect (client)");
-  }
-  else
-  {
-    printf("Host: %s\n", pParameters->host);
-    printf("Port: %d\n", pParameters->port);
-  }
-     
-  // use non-blocking socket
-  int on = 1;
-  status = ioctl(result, FIONBIO, (char *)&on);
-
-  return result;
+  // return socket
+  return socketFile;
 }
 
 void cleanup(int pSocketFile)

@@ -1,6 +1,6 @@
 /***************************************************************
  *
- * error.h
+ * network.h
  * ...
  *
  ***************************************************************
@@ -22,26 +22,24 @@
  *
  ***************************************************************/
 
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef NETWORK_H
+#define NETWORK_H
 
-#include <stdlib.h>
+#include <netinet/in.h>
 
-#define ERROR_MESSAGE_FORMAT      "%s : %s\n"
-#define ERROR_MESSAGE_FATAL_ERROR "FATAL ERROR"
-#define ERROR_MESSAGE_ERROR       "ERROR"
-#define ERROR_MESSAGE_WARNING     "WARNING"
+#define NETWORK_QUIT_MESSAGE              "exit"
+#define NETWORK_DEFAULT_HOST              "localhost"
+#define NETWORK_DEFAULT_PORT              51717
+#define NETWORK_BACKLOG_QUEUE             5
+#define NETWORK_COMMUNICATION_BUFFER_SIZE 256
 
-#define ERROR_STRINGIFY(pM) #pM
-#define ERROR_TOSTRING(pM)  ERROR_STRINGIFY(pM)
-#define ERROR_MESSAGE(pM)   (pM " : " __FILE__ " (" ERROR_TOSTRING(__LINE__) ")")
+int  openSocket    (void);
+void bindSocket    (int pSocketFile, int pPort);
+int  initServer    (int pPort);
+int  initClient    (int pPort, const char *pHost);
+int  getConnection (int pSocketFile);
+void sendMessage   (int pSocketFile, const char *pMessage);
+int  receiveMessage(int pSocketFile, char *pBuffer, int pSize);
 
-#define FATAL_ERROR(pMessage) fatalError(ERROR_MESSAGE(pMessage), EXIT_FAILURE)
-#define ERROR(pMessage)       error     (ERROR_MESSAGE(pMessage))
-#define WARNING(pMessage)     warning   (ERROR_MESSAGE(pMessage))
+#endif // NETWORK_H
 
-void fatalError(const char *pMessage, int pExitCode);
-void error     (const char *pMessage);
-void warning   (const char *pMessage);
-
-#endif // ERROR_H

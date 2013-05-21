@@ -28,8 +28,8 @@ CFLAGS = -Wall -I$(IDIR)
 LIBS   =
 ODIR   = ./
 LDIR   = ./
-_DEPS  = args.h error.h terminalInput.h message.h
-_OBJ   = args.o error.o terminalInput.o
+_DEPS  = args.h error.h network.h terminalInput.h message.h
+_OBJ   = args.o error.o network.o terminalInput.o
 
 DEPS   = $(patsubst %,$(IDIR)/%,$(_DEPS))
 OBJ    = $(patsubst %,$(ODIR)/%,$(_OBJ))
