@@ -1,7 +1,9 @@
 /***************************************************************
  *
  * args.c
- * ...
+ * This module parses command line arguments and scans them
+ * into variables.  It can also perform arbitrary processing
+ * in response to command line arguments.
  *
  ***************************************************************
  *
@@ -22,6 +24,7 @@
  *
  ***************************************************************/
 
+// library headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,16 +35,19 @@
 // module variables
 char mToken = ARGS_DEFAULT_TOKEN;
 
+// get parsing token
 char argsGetToken(void)
 {
   return mToken;
 }
 
+// set parsing token
 void argsSetToken(char pToken)
 {
   mToken = pToken;
 }
 
+// get next data element
 int argsNextData(int argc, char *argv[], int argn, struct args_param_t *args_param, const char **data)
 {
   char         token = argsGetToken();
@@ -83,6 +89,7 @@ int argsNextData(int argc, char *argv[], int argn, struct args_param_t *args_par
   return 0;
 }
 
+// scan command line argument into an integer
 int argsInteger(int argc, char *argv[], int argn, struct args_param_t *args_param, void *data)
 {
   int *        value_ptr = (int *)data;
@@ -95,6 +102,7 @@ int argsInteger(int argc, char *argv[], int argn, struct args_param_t *args_para
   return result;
 }
 
+// scan command line argument into a float
 int argsFloat(int argc, char *argv[], int argn, struct args_param_t *args_param, void *data)
 {
   float *      value_ptr = (float *)data;
@@ -107,6 +115,7 @@ int argsFloat(int argc, char *argv[], int argn, struct args_param_t *args_param,
   return result;
 }
 
+// scan command line argument into a string
 int argsString(int argc, char *argv[], int argn, struct args_param_t *args_param, void *data)
 {
   const char ** value_ptr = (const char **)data;
@@ -119,6 +128,7 @@ int argsString(int argc, char *argv[], int argn, struct args_param_t *args_param
   return result;
 }
 
+// scan data into variable and report number of arguments consumed
 int argsParamEntryProcess(int argc, char *argv[], int argn, args_param_t *args_param)
 {
   const char * arg    = argv[argn];
@@ -143,6 +153,7 @@ int argsParamEntryProcess(int argc, char *argv[], int argn, args_param_t *args_p
   return result;
 }
 
+// process a single command line argument using the argument list
 int argsParamsProcess(int argc, char *argv[], int argn, args_param_t *pParams)
 {
   int result = 0;
@@ -161,6 +172,7 @@ int argsParamsProcess(int argc, char *argv[], int argn, args_param_t *pParams)
   return result;
 }
 
+// process all command line arguments
 void argsProcess(int argc, char *argv[], args_param_t *pParams)
 {
   int inc = 0;
