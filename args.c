@@ -42,7 +42,7 @@ void argsSetToken(char pToken)
   mToken = pToken;
 }
 
-int argsNextData (int argc, char *argv[], int argn, struct args_param_t *args_param, const char **data)
+int argsNextData(int argc, char *argv[], int argn, struct args_param_t *args_param, const char **data)
 {
   char         token = argsGetToken();
   const char * arg   = argv[argn];
@@ -85,7 +85,7 @@ int argsNextData (int argc, char *argv[], int argn, struct args_param_t *args_pa
 
 int argsInteger(int argc, char *argv[], int argn, struct args_param_t *args_param, void *data)
 {
-  int        * value_ptr = (int *)data;
+  int *        value_ptr = (int *)data;
   const char * argText;
   int          result = argsNextData(argc, argv, argn, args_param, &argText);
   if (argText)
@@ -97,7 +97,7 @@ int argsInteger(int argc, char *argv[], int argn, struct args_param_t *args_para
 
 int argsFloat(int argc, char *argv[], int argn, struct args_param_t *args_param, void *data)
 {
-  float      * value_ptr = (float *)data;
+  float *      value_ptr = (float *)data;
   const char * argText;
   int          result = argsNextData(argc, argv, argn, args_param, &argText);
   if (argText)
@@ -110,7 +110,7 @@ int argsFloat(int argc, char *argv[], int argn, struct args_param_t *args_param,
 int argsString(int argc, char *argv[], int argn, struct args_param_t *args_param, void *data)
 {
   const char ** value_ptr = (const char **)data;
-  const char  * argText;
+  const char *  argText;
   int           result = argsNextData(argc, argv, argn, args_param, &argText);
   if (argText)
   {
@@ -143,7 +143,7 @@ int argsParamEntryProcess(int argc, char *argv[], int argn, args_param_t *args_p
   return result;
 }
 
-int argsParamsProcess (int argc, char *argv[], int argn, args_param_t *pParams)
+int argsParamsProcess(int argc, char *argv[], int argn, args_param_t *pParams)
 {
   int result = 0;
   int i;
@@ -202,9 +202,9 @@ int usage(int argc, char *argv[], int argn, args_param_t *argsparam, void *data)
 // main program
 int main(int argc, char *argv[])
 {
-  int   port = 12;
-  char *host = "localhost";
-  float cost = 3.14;
+  int    port = 12;
+  char * host = "localhost";
+  float  cost = 3.14;
 
   args_param_t args_param_list[] =
   {
