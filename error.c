@@ -1,7 +1,8 @@
 /***************************************************************
  *
  * error.c
- * ...
+ * This module handles warnings messages, error messages and
+ * fatal errors.
  *
  ***************************************************************
  *
@@ -22,17 +23,21 @@
  *
  ***************************************************************/
 
+// library headers
 #include <stdlib.h>
 #include <stdio.h>
 
+// module headers
 #include "error.h"
 
+// display message in standard format
 void errorMessage(const char *pTag, const char *pMessage)
 {
   fprintf(stderr, ERROR_MESSAGE_FORMAT, pTag, pMessage);
   fflush (stderr); 
 }
 
+// display fatal error message and exit
 void fatalError(const char *pMessage, int pExitCode)
 {
   errorMessage(ERROR_MESSAGE_FATAL_ERROR, pMessage);
@@ -40,12 +45,15 @@ void fatalError(const char *pMessage, int pExitCode)
   exit        (pExitCode);
 }
 
+// display error message
 void error(const char *pMessage)
 {
   errorMessage(ERROR_MESSAGE_ERROR, pMessage);
 }
 
+// display warning message
 void warning(const char *pMessage)
 {
   errorMessage(ERROR_MESSAGE_WARNING, pMessage);
 }
+
