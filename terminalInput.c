@@ -1,7 +1,7 @@
 /***************************************************************
  *
  * terminalInput.c
- * ...
+ * This modules handles nonblocking terminal input.
  *
  ***************************************************************
  *
@@ -22,15 +22,19 @@
  *
  ***************************************************************/
 
+// library headers
 #include <stdio.h>
 #include <stdlib.h>
-#include <termios.h>
-#include <sys/select.h>
-#include <unistd.h>
 #include <string.h>
+#include <sys/select.h>
+#include <termios.h>
+#include <unistd.h>
 
+// module headers
+#include "error.h"
 #include "terminalInput.h"
 
+// module variables
 char           mTerminalInputDefaultBuffer[TERMINAL_INPUT_BUFFER_SIZE];
 char *         mTerminalInputBuffer;
 int            mTerminalInputBufferSize;
@@ -38,15 +42,17 @@ const char *   mTerminalInputPrompt;
 int            mTerminalInputCursor;
 struct termios mTerminalInputOriginalSettings;
 
+// initialize terminal input and enable nonblocking input
 void terminalInputInit(const char *pPrompt, char *pBuffer, int pSize)
 {
   struct termios newSettings;
 
+  // set internal variable and clear state
   terminalInputSetPrompt(pPrompt);
   terminalInputSetBuffer(pBuffer, pSize);
   terminalInputReset();
 
-  // Get the current terminal settings
+  // get current terminal state
   if (tcgetattr(0, &mTerminalInputOriginalSettings) < 0)
   {
     perror("tcgetattr()");
@@ -54,20 +60,18 @@ void terminalInputInit(const char *pPrompt, char *pBuffer, int pSize)
   }
   memcpy(&newSettings, &mTerminalInputOriginalSettings, sizeof(struct termios));
 
-  // disable canonical mode processing in the line discipline driver
+  // enable non-blocking terminal input
   newSettings.c_lflag &= ~ICANON;
-
-  // apply our new settings
   if (tcsetattr(0, TCSANOW, &newSettings) < 0)
   {
-    perror("tcsetattr ICANON");
-    exit(EXIT_FAILURE);
+    FATAL_ERROR("Could not enable non-blocking terminal input!");
   }
 }
 
+// cleanup and restore terminal state
 void terminalInputCleanUp(void)
 {
-  // restore the terminal settings to their prvious state
+  // restore terminal state
   if (tcsetattr(0, TCSANOW, &mTerminalInputOriginalSettings) < 0)
   {
     perror("tcsetattr ICANON");
@@ -75,22 +79,26 @@ void terminalInputCleanUp(void)
   }
 }
 
+// reset module state
 void terminalInputReset(void)
 {
   bzero(mTerminalInputBuffer, mTerminalInputBufferSize);
   mTerminalInputCursor = 0;
 }
 
+// set prompt
 void terminalInputSetPrompt(const char *pPrompt)
 {
   mTerminalInputPrompt = pPrompt ? pPrompt : TERMINAL_INPUT_DEFAULT_PROMPT;
 }
 
+// get prompt
 const char *terminalInputGetPrompt(void)
 {
   return mTerminalInputPrompt;
 }
 
+// set buffer
 void terminalInputSetBuffer(char *pBuffer, int pSize)
 {
   if (NULL != pBuffer)
@@ -105,18 +113,27 @@ void terminalInputSetBuffer(char *pBuffer, int pSize)
   }
 }
 
+// get buffer
+const char *terminalInputGetBuffer(void)
+{
+  return mTerminalInputBuffer;
+}
+
+// is buffer empty?
 int terminalInputEmpty(void)
 {
   int result = 0 == mTerminalInputCursor;
   return result;
 }
 
+// display prompt
 void terminalInputPromptDisplay(void)
 {
   printf("%s %s", mTerminalInputPrompt, mTerminalInputBuffer);
   fflush(stdout);
 }
 
+// display prompt unless it is empty
 void terminalInputPromptDisplayUnlessEmpty(void)
 {
   if (!terminalInputEmpty())
@@ -125,12 +142,14 @@ void terminalInputPromptDisplayUnlessEmpty(void)
   }
 }
 
+// display new prompt, clear internal buffer first
 void terminalInputPrompt(void)
 {
   terminalInputReset();
   terminalInputPromptDisplay();
 }
 
+// is input file ready to read from?
 int terminalInputFileReady(int pFile)
 {
   struct timeval timeout;
@@ -143,11 +162,13 @@ int terminalInputFileReady(int pFile)
   return result;
 }
 
+// is stdin ready to read from?
 int terminalInputReady(void)
 {
   return terminalInputFileReady(STDIN_FILENO);
 }
 
+// delete a character from the buffer
 void terminalInputBackspace(void)
 {
   if (0 < mTerminalInputCursor)
@@ -157,6 +178,7 @@ void terminalInputBackspace(void)
   }
 }
 
+// add a character to the buffer
 void terminalInputBufferCharacter(int pC)
 {
   if (('\b' == pC) || (127 == pC) || (224 == pC))
@@ -168,10 +190,5 @@ void terminalInputBufferCharacter(int pC)
     mTerminalInputBuffer[mTerminalInputCursor] = pC;
     mTerminalInputCursor++;
   }
-}
-
-const char *terminalInputGetBuffer(void)
-{
-  return mTerminalInputBuffer;
 }
 

@@ -1,7 +1,7 @@
 /***************************************************************
  *
  * terminalInput.h
- * ...
+ * This modules handles nonblocking terminal input.
  *
  ***************************************************************
  *
@@ -25,26 +25,29 @@
 #ifndef TERMINAL_INPUT_H
 #define TERMINAL_INPUT_H
 
+// required headers
 #include "network.h"
 
-#define TERMINAL_INPUT_DEFAULT_PROMPT ">"
-#define TERMINAL_INPUT_BUFFER_SIZE    NETWORK_COMMUNICATION_BUFFER_SIZE
+// module macros
+#define TERMINAL_INPUT_DEFAULT_PROMPT   ">"
+#define TERMINAL_INPUT_BUFFER_SIZE      NETWORK_COMMUNICATION_BUFFER_SIZE
 
-void terminalInputInit(const char *pPrompt, char *pBuffer, int pSize);
-void terminalInputCleanUp(void);
-void terminalInputReset(void);
-void terminalInputSetPrompt(const char *pPrompt);
-const char *terminalInputGetPrompt(void);
-void terminalInputSetBuffer(char *pBuffer, int pSize);
-int terminalInputEmpty(void);
-void terminalInputPromptDisplay(void);
-void terminalInputPromptDisplayUnlessEmpty(void);
-void terminalInputPrompt(void);
-int terminalInputFileReady(int pFile);
-int terminalInputReady(void);
-void terminalInputBackspace(void);
-void terminalInputBufferCharacter(int pC);
-const char *terminalInputGetBuffer(void);
+// function prototypes
+void         terminalInputInit                     (const char *pPrompt, char *pBuffer, int pSize);
+void         terminalInputCleanUp                  (void);
+void         terminalInputReset                    (void);
+void         terminalInputSetPrompt                (const char *pPrompt);
+const char * terminalInputGetPrompt                (void);
+void         terminalInputSetBuffer                (char *pBuffer, int pSize);
+const char * terminalInputGetBuffer                (void);
+int          terminalInputEmpty                    (void);
+void         terminalInputPromptDisplay            (void);
+void         terminalInputPromptDisplayUnlessEmpty (void);
+void         terminalInputPrompt                   (void);
+int          terminalInputFileReady                (int pFile);
+int          terminalInputReady                    (void);
+void         terminalInputBackspace                (void);
+void         terminalInputBufferCharacter          (int pC);
 
 #endif // TERMINAL_INPUT_H
 
