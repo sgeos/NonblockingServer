@@ -25,13 +25,16 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+// library headers
 #include <netinet/in.h>
 
+// constants
 #define NETWORK_DEFAULT_HOST              "localhost"
 #define NETWORK_DEFAULT_PORT              51717
 #define NETWORK_BACKLOG_QUEUE             5
 #define NETWORK_COMMUNICATION_BUFFER_SIZE 1024
 
+// function prototypes
 int  openSocket    (void);
 void bindSocket    (int pSocketFile, int pPort);
 int  initServer    (int pPort);
