@@ -1,7 +1,8 @@
 /***************************************************************
  *
  * client.h
- * ...
+ * The main module for a simple chat client written in C.
+ * It uses non-blocking sockets and non-blocking terminal input.
  *
  ***************************************************************
  *
@@ -25,6 +26,7 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+// types
 // struct containing command line parameters
 typedef struct client_param_t
 {

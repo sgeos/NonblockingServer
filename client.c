@@ -42,6 +42,7 @@
 #include "network.h"
 #include "terminalInput.h"
 
+// act on user input
 int executeCommand(int pSocketFile, char *pCommand)
 {
   int done = 0;
@@ -62,6 +63,7 @@ int executeCommand(int pSocketFile, char *pCommand)
   return done;
 }
 
+// process user input
 int processInput(int pSocketFile, char *pBuffer, int pSize)
 {
   int done = 0;
@@ -96,6 +98,7 @@ int processInput(int pSocketFile, char *pBuffer, int pSize)
   return done;
 }
 
+// process messages from server and display output
 void processOutput(int pSocket, char *pBuffer, int pSize)
 {
   int outputPrinted = 0;
@@ -114,6 +117,7 @@ void processOutput(int pSocket, char *pBuffer, int pSize)
   }
 }
 
+// initialize client
 int init(client_param_t *pParameters)
 {
   // create socket and connect to server
@@ -127,6 +131,7 @@ int init(client_param_t *pParameters)
   return socketFile;
 }
 
+// cleanup before exiting
 void cleanup(int pSocketFile)
 {
   terminalInputCleanUp();
