@@ -1,7 +1,8 @@
 /***************************************************************
  *
  * server.c
- * ...
+ * The main module for a simple chat server written in C.
+ * It uses non-blocking sockets and non-blocking terminal input.
  *
  ***************************************************************
  *
@@ -22,6 +23,7 @@
  *
  ***************************************************************/
 
+// library headers
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -33,130 +35,148 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+// module headers
+#include "error.h"
 #include "message.h"
 #include "network.h"
-#include "error.h"
+#include "server.h"
 
-void write_to_client(int pFileDes, const char *pMessage)
+void connectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
 {
-  int size = write(pFileDes, pMessage, strlen(pMessage) + 1);
-  if (size < 0)
+  struct sockaddr_in clientName;
+  socklen_t          size         = sizeof(clientName);
+  int                newSocketId  = accept(pSocketId, (struct sockaddr *)&clientName, &size);
+  if (newSocketId < 0)
   {
-    FATAL_ERROR("write");
+    FATAL_ERROR("Could not accept new client connection.");
   }
+  printf("Connected Client : host %s, port %hu\n", inet_ntoa(clientName.sin_addr), ntohs(clientName.sin_port));
+  FD_SET(newSocketId, pReadSet);
+  FD_SET(newSocketId, pWriteSet);
 }
 
-int read_from_client(int pFileDes, fd_set *pWriteFdSet)
+void disconnectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
 {
-  char messageBuffer[NETWORK_COMMUNICATION_BUFFER_SIZE];
-  int  size = read(pFileDes, messageBuffer, sizeof(messageBuffer));
-  int  result;
+  printf("Disconnected Client : %d\n", pSocketId);
+  close (pSocketId);
+  FD_CLR(pSocketId, pReadSet);
+  FD_CLR(pSocketId, pWriteSet);
+}
 
-  if (size < 0)
-  {
-    FATAL_ERROR("read");
-  }
-  else if (size == 0)
-  {
-    // end of file
-    result = -1;
-  }
-  else
-  {
-    // data read
-    fprintf(stderr, "Message : %s\n", messageBuffer);
-    result = 0;
-  }
+int isSocketReady(fd_set *pReadSet)
+{
+  struct timeval timeout;
+  int            result;
 
-  // service all sockets
-  printf("From : %d\n", pFileDes);
+  // initialize timeout
+  timeout.tv_sec  = 0;
+  timeout.tv_usec = 0;
+
+  // check socket
+  result = select(FD_SETSIZE, pReadSet, NULL, NULL, &timeout);
+  if (result < 0)
+  {
+    FATAL_ERROR("Could not check sockets for input.");
+  }
+  return result;
+}
+
+void broadcastMessage(int pSocketId, fd_set *pWriteSet, const char *pMessage)
+{
+  printf("Message : %s\n", pMessage);
+  printf("From : %d\n", pSocketId);
   printf("To :");
-
   int i;
   for (i = 0; i < FD_SETSIZE; i++)
   {
-    if (FD_ISSET(i, pWriteFdSet))
+    if (FD_ISSET(i, pWriteSet))
     {
-      if (i == pFileDes)
+      if (i == pSocketId)
       {
         // do nothing
       }
       else
       {
         printf(" %d", i);
-        write_to_client(i, messageBuffer);
+        sendMessage(i, pMessage);
       }
     }
   }
   printf("\n");
+}
 
+int readClientMessage(int pSocketId, fd_set *pWriteSet)
+{
+  char messageBuffer[NETWORK_COMMUNICATION_BUFFER_SIZE];
+  int result = 1;
+
+  if (receiveMessageReady(pSocketId))
+  {
+    result = receiveMessage(pSocketId, messageBuffer, sizeof(messageBuffer));
+    if (result)
+    {
+      broadcastMessage(pSocketId, pWriteSet, messageBuffer);
+    }
+  }
   return result;
+}
+
+int processSocketInput(int pNewConnectionSocket, fd_set *pReadSet, fd_set *pWriteSet)
+{
+  int done = 0;
+
+  // service all sockets
+  fd_set loopSet = *pReadSet;
+  while (isSocketReady(&loopSet))
+  {
+    for (int i = 0; i < FD_SETSIZE; i++)
+    {
+      if (FD_ISSET(i, &loopSet))
+      {
+        if (i == pNewConnectionSocket)
+        {
+          connectClient(i, pReadSet, pWriteSet);
+        }
+        else
+        {
+          if (!readClientMessage(i, pWriteSet))
+          {
+            disconnectClient(i, pReadSet, pWriteSet);
+            FD_CLR(i, &loopSet);
+          }
+        }
+      }
+    }
+  }
+  return done;
 }
      
 int main(void)
 {
   extern int make_socket(uint16_t port);
-  int sock;
-  fd_set active_fd_set, read_fd_set, write_fd_set;
-  int i;
-  struct sockaddr_in clientname;
-  socklen_t size;
-  int done = 0;
+
+  int       newConnectionSocket;
+  fd_set    readSet;
+  fd_set    writeSet;
+  int       done;
 
   // create socket
-  sock = make_socket(NETWORK_DEFAULT_PORT);
-  if (listen(sock, 1) < 0)
+  newConnectionSocket = make_socket(NETWORK_DEFAULT_PORT);
+  if (listen(newConnectionSocket, 1) < 0)
   {
-    FATAL_ERROR("listen");
+    FATAL_ERROR("Could not listen for new client connections.");
   }
 
-  // initialize set of active sockets
-  FD_ZERO(&active_fd_set);
-  FD_SET(sock, &active_fd_set);
+  // initialize socket sets
+  FD_ZERO(&readSet);
+  FD_ZERO(&writeSet);
+  FD_SET (newConnectionSocket, &readSet);
 
-  // initialize set of write sockets
-  FD_ZERO(&write_fd_set);
-
+  // service loop
+  done = 0;
   while (!done)
   {
-    // block until input arrives on a socket
-    read_fd_set = active_fd_set;
-    if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0)
-    {
-      FATAL_ERROR("select");
-    }
-
-    // service all sockets
-    for (i = 0; i < FD_SETSIZE; i++)
-    {
-      if (FD_ISSET(i, &read_fd_set))
-      {
-        if (i == sock)
-        {
-          // connection request on original socket
-          int new;
-          size = sizeof(clientname);
-          new  = accept(sock, (struct sockaddr *)&clientname, &size);
-          if (new < 0)
-          {
-            FATAL_ERROR("accept");
-          }
-          fprintf(stderr, "Connection : host %s, port %hu\n", inet_ntoa (clientname.sin_addr), ntohs (clientname.sin_port));
-          FD_SET(new, &active_fd_set);
-          FD_SET(new, &write_fd_set);
-        }
-        else
-        {
-          // data arriving on an already connected socket
-          if (read_from_client(i, &write_fd_set) < 0)
-          {
-            close(i);
-            FD_CLR(i, &active_fd_set);
-            FD_SET(i, &write_fd_set);
-          }
-        }
-      }
-    }
+    done += processSocketInput(newConnectionSocket, &readSet, &writeSet);
   }
   return 0;
 }

@@ -24,7 +24,7 @@
 
 IDIR   = ./
 CC     = gcc
-CFLAGS = -Wall -I$(IDIR) -D _DEBUG
+CFLAGS = -std=c99 -Wall -I$(IDIR) -D _DEBUG
 LIBS   =
 ODIR   = ./
 LDIR   = ./

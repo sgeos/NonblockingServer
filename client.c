@@ -4,6 +4,9 @@
  * The main module for a simple chat client written in C.
  * It uses non-blocking sockets and non-blocking terminal input.
  *
+ * Client appears to die gracefully when disconnected from the
+ * server.  The reason is unclear to the author.
+ *
  ***************************************************************
  *
  * This software was written in 2013 by the following author(s):
@@ -99,22 +102,33 @@ int processInput(int pSocketFile, char *pBuffer, int pSize)
 }
 
 // process messages from server and display output
-void processOutput(int pSocket, char *pBuffer, int pSize)
+int processOutput(int pSocket, char *pBuffer, int pSize)
 {
+  int done = 0;
   int outputPrinted = 0;
-  while (receiveMessage(pSocket, pBuffer, pSize))
+  while (receiveMessageReady(pSocket))
   {
-    if (!outputPrinted)
+    if (0 == receiveMessage(pSocket, pBuffer, pSize))
     {
-      outputPrinted = 1;
-      printf("\n");
+      ERROR("Disconnected from server.");
+      done = 1;
+      break;
     }
-    printf("Message : %s\n", pBuffer);
+    else
+    {
+      if (!outputPrinted)
+      {
+        outputPrinted = 1;
+        printf("\n");
+      }
+      printf("Message : %s\n", pBuffer);
+    }
   }
   if (outputPrinted)
   {
     terminalInputPromptDisplay();
   }
+  return done;
 }
 
 // initialize client
@@ -144,18 +158,17 @@ int service(int pSocketFile)
 {
   char inputBuffer [NETWORK_COMMUNICATION_BUFFER_SIZE];
   char outputBuffer[NETWORK_COMMUNICATION_BUFFER_SIZE];
-  int  done;
+  int  done = 0;
 
   // initialize service loop
-  done = 0;
   terminalInputInit(TERMINAL_INPUT_DEFAULT_PROMPT, inputBuffer, sizeof(inputBuffer));
   terminalInputPromptDisplay();
 
   // main loop
   while (!done)
   {
-    processOutput(pSocketFile, outputBuffer, sizeof(outputBuffer));
-    done = processInput (pSocketFile, inputBuffer,  sizeof(inputBuffer));
+    done += processOutput(pSocketFile, outputBuffer, sizeof(outputBuffer));
+    done += processInput (pSocketFile, inputBuffer,  sizeof(inputBuffer));
   }
 
   return EXIT_SUCCESS;

@@ -1,7 +1,8 @@
 /***************************************************************
  *
  * server.h
- * ...
+ * The main module for a simple chat server written in C.
+ * It uses non-blocking sockets and non-blocking terminal input.
  *
  ***************************************************************
  *

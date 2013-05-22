@@ -80,7 +80,7 @@ void connectSocket(int pSocketFile, int pPort, const char *pHost)
   server = gethostbyname(pHost);
   if (NULL == server)
   {
-    FATAL_ERROR("No such host!");
+    FATAL_ERROR("Server host not found.");
   }
 
   // initialize data
@@ -94,14 +94,14 @@ void connectSocket(int pSocketFile, int pPort, const char *pHost)
   // connect
   if (connect(pSocketFile, (struct sockaddr *)&address, sizeof(address)) < 0)
   {
-    FATAL_ERROR("Error connecting!");
+    FATAL_ERROR("Could not connect to server.");
   }
 
   // use non-blocking socket
   int on = 1;
   if (ioctl(pSocketFile, FIONBIO, (char *)&on) < 0)
   {
-    FATAL_ERROR("Error using non-binding socket!");
+    FATAL_ERROR("Could not use non-binding socket.");
   }
 }
 
@@ -165,9 +165,34 @@ int receiveMessage(int pSocketFile, char *pBuffer, int pSize)
   int result = read(pSocketFile, pBuffer, pSize - 1);
   if (result < 0)
   {
-    // Non-blocking, so a failed read is not an error.
-    result = 0;
-    // FATAL_ERROR("Error reading from socket!");
+    // Use receiveMessageReady() to avoid an error when using
+    // non-blocking sockets
+    FATAL_ERROR("Could not read from socket.");
+  }
+  return result;
+}
+
+// returns true if the given socket has data to read
+int receiveMessageReady(int pSocketFile)
+{
+  fd_set socketList;
+  FD_ZERO(&socketList);
+  FD_SET(pSocketFile, &socketList);
+  struct timeval timeout;
+  timeout.tv_sec  = 0;
+  timeout.tv_usec = 0;
+  int result = select(pSocketFile + 1, &socketList, NULL, NULL, &timeout);
+  if (0 == result)
+  {
+    // no data to read
+  }
+  else if (result < 0)
+  {
+    FATAL_ERROR("Could not check socket for read.");
+  }
+  else if (!FD_ISSET(pSocketFile, &socketList))
+  {
+    FATAL_ERROR("Could not check socket for read.");
   }
   return result;
 }
