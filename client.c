@@ -67,7 +67,7 @@ int processInput(int pSocketFile, char *pBuffer, int pSize)
   int done = 0;
   while (terminalInputReady())
   {
-    int clearLine = 1;
+    int clearLine = 0;
     int c = fgetc(stdin);
     switch (c)
     {
@@ -163,8 +163,8 @@ int usage(int pArgC, char *pArgV[], int pArgN, args_param_t *pArgsParam, void *p
   printf("    -p     <port number>\n"    );
   printf("    --port <port number>\n"    );
   printf("        Set port number.\n"    );
-  printf("    -h     <port number>\n"    );
-  printf("    --host <port number>\n"    );
+  printf("    -h     <host name>\n"      );
+  printf("    --host <host name>\n"      );
   printf("        Set host.\n"           );
   printf("    -?\n"                      );
   printf("    --help\n"                  );
@@ -183,12 +183,12 @@ int main(int argc, char *argv[])
   };
   args_param_t args_param_list[] =
   {
-    { "-p",     &parameters.port, argsInteger },
-    { "--port", &parameters.port, argsInteger },
-    { "-h",     &parameters.host, argsString  },
-    { "--host", &parameters.host, argsString  },
-    { "-?",     NULL,             usage       },
-    { "--help", NULL,             usage       },
+    {"-p",     &parameters.port, argsInteger},
+    {"--port", &parameters.port, argsInteger},
+    {"-h",     &parameters.host, argsString },
+    {"--host", &parameters.host, argsString },
+    {"-?",     NULL,             usage      },
+    {"--help", NULL,             usage      },
     ARGS_DONE
   };
   int socketFile;
