@@ -25,6 +25,7 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+// constants
 #define MESSAGE_NULL    ""
 #define MESSAGE_DEFAULT "Hello world!"
 #define MESSAGE_EXIT    "/exit"
