@@ -25,10 +25,10 @@
 #ifndef TERMINAL_INPUT_H
 #define TERMINAL_INPUT_H
 
-#include "message.h"
+#include "network.h"
 
 #define TERMINAL_INPUT_DEFAULT_PROMPT ">"
-#define TERMINAL_INPUT_BUFFER_SIZE    DEFAULT_MESSAGE_BUFFER_SIZE
+#define TERMINAL_INPUT_BUFFER_SIZE    NETWORK_COMMUNICATION_BUFFER_SIZE
 
 void terminalInputInit(const char *pPrompt, char *pBuffer, int pSize);
 void terminalInputCleanUp(void);

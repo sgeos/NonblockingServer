@@ -1,7 +1,7 @@
 /***************************************************************
  *
  * message.h
- * ...
+ * Shared messages for program.
  *
  ***************************************************************
  *
@@ -24,10 +24,6 @@
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
-
-#define DEFAULT_SERVER_HOST         "localhost"
-#define DEFAULT_PORT                55555
-#define DEFAULT_MESSAGE_BUFFER_SIZE 512
 
 #define MESSAGE_NULL    ""
 #define MESSAGE_DEFAULT "Hello world!"

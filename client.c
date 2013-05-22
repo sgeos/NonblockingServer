@@ -137,8 +137,8 @@ void cleanup(int pSocketFile)
 // service loop
 int service(int pSocketFile)
 {
-  char inputBuffer [DEFAULT_MESSAGE_BUFFER_SIZE];
-  char outputBuffer[DEFAULT_MESSAGE_BUFFER_SIZE];
+  char inputBuffer [NETWORK_COMMUNICATION_BUFFER_SIZE];
+  char outputBuffer[NETWORK_COMMUNICATION_BUFFER_SIZE];
   int  done;
 
   // initialize service loop
@@ -178,8 +178,8 @@ int main(int argc, char *argv[])
 {
   client_param_t parameters =
   {
-    DEFAULT_PORT,
-    DEFAULT_SERVER_HOST
+    NETWORK_DEFAULT_PORT,
+    NETWORK_DEFAULT_HOST
   };
   args_param_t args_param_list[] =
   {

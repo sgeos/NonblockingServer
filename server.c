@@ -34,6 +34,7 @@
 #include <arpa/inet.h>
 
 #include "message.h"
+#include "network.h"
 #include "error.h"
 
 void write_to_client(int pFileDes, const char *pMessage)
@@ -47,8 +48,8 @@ void write_to_client(int pFileDes, const char *pMessage)
 
 int read_from_client(int pFileDes, fd_set *pWriteFdSet)
 {
-  char messageBuffer[DEFAULT_MESSAGE_BUFFER_SIZE];
-  int  size = read(pFileDes, messageBuffer, DEFAULT_MESSAGE_BUFFER_SIZE);
+  char messageBuffer[NETWORK_COMMUNICATION_BUFFER_SIZE];
+  int  size = read(pFileDes, messageBuffer, sizeof(messageBuffer));
   int  result;
 
   if (size < 0)
@@ -103,7 +104,7 @@ int main(void)
   int done = 0;
 
   // create socket
-  sock = make_socket(DEFAULT_PORT);
+  sock = make_socket(NETWORK_DEFAULT_PORT);
   if (listen(sock, 1) < 0)
   {
     FATAL_ERROR("listen");

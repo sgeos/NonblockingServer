@@ -1,7 +1,7 @@
 /***************************************************************
  *
  * network.h
- * ...
+ * This module contians network code for the client and server.
  *
  ***************************************************************
  *
@@ -27,11 +27,10 @@
 
 #include <netinet/in.h>
 
-#define NETWORK_QUIT_MESSAGE              "exit"
 #define NETWORK_DEFAULT_HOST              "localhost"
 #define NETWORK_DEFAULT_PORT              51717
 #define NETWORK_BACKLOG_QUEUE             5
-#define NETWORK_COMMUNICATION_BUFFER_SIZE 256
+#define NETWORK_COMMUNICATION_BUFFER_SIZE 1024
 
 int  openSocket    (void);
 void bindSocket    (int pSocketFile, int pPort);

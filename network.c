@@ -1,7 +1,7 @@
 /***************************************************************
  *
  * network.c
- * ...
+ * This module contians network code for the client and server.
  *
  ***************************************************************
  *
@@ -33,6 +33,7 @@
 #include "error.h"
 #include "network.h"
 
+// open a socket
 int openSocket(void)
 {
   int result;
@@ -45,28 +46,30 @@ int openSocket(void)
   return result;
 }
 
-void bindSocket ( int pSocketFile, int pPort )
+// bind a socket (server)
+void bindSocket(int pSocketFile, int pPort)
 {
   // local variables
   struct sockaddr_in address;
   int                size;
 
   // zero data
-  size = sizeof ( address );
-  bzero ( (char *)&address, size );
+  size = sizeof(address);
+  bzero ((char *)&address, size);
 
   // initialize data
   address.sin_family      = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
-  address.sin_port        = htons ( pPort );
+  address.sin_port        = htons(pPort);
 
   // bind
-  if ( bind ( pSocketFile, (struct sockaddr *)&address, size ) < 0 )
+  if (bind(pSocketFile, (struct sockaddr *)&address, size) < 0)
   {
-    fatalError ( "Error on binding!", 1 );
+    FATAL_ERROR("Error on binding!");
   }
 }
 
+// connect a socket (client)
 void connectSocket(int pSocketFile, int pPort, const char *pHost)
 {
   // local variables
@@ -102,19 +105,21 @@ void connectSocket(int pSocketFile, int pPort, const char *pHost)
   }
 }
 
-int initServer ( int pPort )
+// server initialization
+int initServer(int pPort)
 {
   // local variables
   int socketFile;
 
   // open / bind / listen on socket
-  socketFile = openSocket ( );
-  bindSocket ( socketFile, pPort );
-  listen ( socketFile, NETWORK_BACKLOG_QUEUE );
+  socketFile = openSocket();
+  bindSocket(socketFile, pPort);
+  listen(socketFile, NETWORK_BACKLOG_QUEUE);
 
   return socketFile;
 }
 
+// client initialization
 int initClient(int pPort, const char *pHost)
 {
   // open socket
@@ -126,21 +131,23 @@ int initClient(int pPort, const char *pHost)
   return socketFile;
 }
 
-int getConnection ( int pSocketFile )
+// get a connection
+int getConnection(int pSocketFile)
 {
   struct sockaddr_in address;
   socklen_t          size;
   int                socketFile;
 
-  size = sizeof ( address );
-  socketFile = accept ( pSocketFile, (struct sockaddr *)&address, &size );
-  if ( socketFile < 0 )
+  size = sizeof(address);
+  socketFile = accept(pSocketFile, (struct sockaddr *)&address, &size);
+  if (socketFile < 0)
   {
-    fatalError ( "Error on accept!", 1 );
+    FATAL_ERROR("Error on accept!");
   }
   return socketFile;
 }
 
+// send message
 void sendMessage(int pSocketFile, const char *pMessage)
 {
   int size   = strlen(pMessage) + 1;
@@ -151,6 +158,7 @@ void sendMessage(int pSocketFile, const char *pMessage)
   }
 }
 
+// receive message
 int receiveMessage(int pSocketFile, char *pBuffer, int pSize)
 {
   bzero(pBuffer, pSize);
