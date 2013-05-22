@@ -42,14 +42,14 @@
 #include "network.h"
 #include "terminalInput.h"
 
-int prepareMessage(int pSocketFile, char *pBuffer)
+int executeCommand(int pSocketFile, char *pCommand)
 {
   int done = 0;
-  if (0 == strcmp(pBuffer, MESSAGE_EXIT))
+  if (0 == strcmp(pCommand, MESSAGE_EXIT))
   {
     done = 1;
   }
-  else if (0 == strcmp(pBuffer, MESSAGE_NULL))
+  else if (0 == strcmp(pCommand, MESSAGE_NULL))
   {
     printf("%s %s\n", terminalInputGetPrompt(), MESSAGE_DEFAULT);
     sendMessage(pSocketFile, MESSAGE_DEFAULT);
@@ -72,7 +72,7 @@ int processInput(int pSocketFile, char *pBuffer, int pSize)
     switch (c)
     {
       case '\n':
-        done = prepareMessage(pSocketFile, pBuffer);
+        done = executeCommand(pSocketFile, pBuffer);
         break;
       case '\b':
       case 127:
@@ -131,6 +131,7 @@ void cleanup(int pSocketFile)
 {
   terminalInputCleanUp();
   close(pSocketFile);
+  printf("\n\n");
 }
 
 // service loop
@@ -172,6 +173,7 @@ int usage(int pArgC, char *pArgV[], int pArgN, args_param_t *pArgsParam, void *p
   return 1;
 }
 
+// main program
 int main(int argc, char *argv[])
 {
   client_param_t parameters =
