@@ -49,7 +49,10 @@ client : $(OBJ) $(ODIR)/client.o
 server : $(OBJ) $(ODIR)/server.o $(ODIR)/make_socket.o
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
 
+args : args.c $(IDIR)/args.h
+	gcc $(CFLAGS) -D ARGS_MAIN -o $@ $^
+
 .PHONY: clean
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ client server *.db
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ client server args *.db
 

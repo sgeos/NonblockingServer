@@ -56,7 +56,7 @@ int executeCommand(int pSocketFile, char *pCommand)
   }
   else
   {
-    sendMessage(pSocketFile, pBuffer);
+    sendMessage(pSocketFile, pCommand);
   }
   terminalInputPrompt();
   return done;
