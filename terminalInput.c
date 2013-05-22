@@ -55,8 +55,7 @@ void terminalInputInit(const char *pPrompt, char *pBuffer, int pSize)
   // get current terminal state
   if (tcgetattr(0, &mTerminalInputOriginalSettings) < 0)
   {
-    perror("tcgetattr()");
-    exit(EXIT_FAILURE);
+    FATAL_ERROR("Could not get terminal state during initialization.");
   }
   memcpy(&newSettings, &mTerminalInputOriginalSettings, sizeof(struct termios));
 
@@ -64,7 +63,7 @@ void terminalInputInit(const char *pPrompt, char *pBuffer, int pSize)
   newSettings.c_lflag &= ~ICANON;
   if (tcsetattr(0, TCSANOW, &newSettings) < 0)
   {
-    FATAL_ERROR("Could not enable non-blocking terminal input!");
+    FATAL_ERROR("Could not enable non-blocking terminal input.");
   }
 }
 
@@ -74,8 +73,7 @@ void terminalInputCleanUp(void)
   // restore terminal state
   if (tcsetattr(0, TCSANOW, &mTerminalInputOriginalSettings) < 0)
   {
-    perror("tcsetattr ICANON");
-    exit(EXIT_FAILURE);
+    FATAL_ERROR("Could not restore terminal state.");
   }
 }
 
