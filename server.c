@@ -42,23 +42,35 @@
 #include "network.h"
 #include "server.h"
 
+void printClientInfo(int pSocketId)
+{
+  struct sockaddr_in clientAddress;
+  socklen_t          size = sizeof(struct sockaddr_in);
+  getsockname(pSocketId, (struct sockaddr *)&clientAddress, &size);
+  printf("id %d, host %s, port %hu", pSocketId, inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port));
+}
+
 void connectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
 {
-  struct sockaddr_in clientName;
-  socklen_t          size         = sizeof(clientName);
-  int                newSocketId  = accept(pSocketId, (struct sockaddr *)&clientName, &size);
-  if (newSocketId < 0)
-  {
-    FATAL_ERROR("Could not accept new client connection.");
-  }
-  printf("Connected Client : id %d, host %s, port %hu\n", newSocketId, inet_ntoa(clientName.sin_addr), ntohs(clientName.sin_port));
+  // connect
+  int newSocketId  = getConnection(pSocketId);
   FD_SET(newSocketId, pReadSet);
   FD_SET(newSocketId, pWriteSet);
+
+  // need to print after disconnecting
+  printf("Connected Client : ");
+  printClientInfo(newSocketId);
+  printf("\n");
 }
 
 void disconnectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
 {
-  printf("Disconnected Client : id %d\n", pSocketId);
+  // need to print before disconnecting
+  printf("Disconnected Client : ");
+  printClientInfo(pSocketId);
+  printf("\n");
+
+  // disconnect
   close (pSocketId);
   FD_CLR(pSocketId, pReadSet);
   FD_CLR(pSocketId, pWriteSet);
@@ -152,38 +164,30 @@ int processSocketInput(int pNewConnectionSocket, fd_set *pReadSet, fd_set *pWrit
   return done;
 }
 
-int make_socket(uint16_t pPort)
+// service loop
+int service(int pPort)
 {
-  int                result;
-  struct sockaddr_in name;
+  int       newConnectionSocket;
+  fd_set    readSet;
+  fd_set    writeSet;
+  int       done;
 
   // create socket
-  result = socket(PF_INET, SOCK_STREAM, 0);
-  if (result < 0)
+  newConnectionSocket = initServer(pPort);
+
+  // initialize socket sets
+  FD_ZERO(&readSet);
+  FD_ZERO(&writeSet);
+  FD_SET (newConnectionSocket, &readSet);
+
+  // service loop
+  done = 0;
+  while (!done)
   {
-    perror("socket");
-    exit(EXIT_FAILURE);
+    done += processSocketInput(newConnectionSocket, &readSet, &writeSet);
   }
 
-  // name socket
-  name.sin_family      = AF_INET;
-  name.sin_port        = htons(pPort);
-  name.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  // bind socket
-  if (bind(result, (struct sockaddr *)&name, sizeof(name)) < 0)
-  {
-    perror("bind");
-    exit(EXIT_FAILURE);
-  }
-
-  return result;
-}
-
-// service loop
-int service()
-{
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 // program usage
@@ -196,7 +200,7 @@ int usage(int argc, char *argv[], int argn, args_param_t *args_param, void *data
   printf ( "    -?\n"                      );
   printf ( "    --help\n"                  );
   printf ( "        Print this usage.\n"   );
-  exit(0);
+  exit(EXIT_SUCCESS);
   return 1;
 }
 
@@ -215,33 +219,16 @@ int main(int argc, char *argv[])
     { "--help", NULL, usage                   },
     ARGS_DONE
   };
-  int       newConnectionSocket;
-  fd_set    readSet;
-  fd_set    writeSet;
-  int       done;
+  int result;
 
   // process command line arguments
   argsProcess ( argc, argv, args_param_list );
   printf ( "Port: %d\n", parameters.port );
 
-  // create socket
-  newConnectionSocket = make_socket(parameters.port);
-  if (listen(newConnectionSocket, 1) < 0)
-  {
-    FATAL_ERROR("Could not listen for new client connections.");
-  }
-
-  // initialize socket sets
-  FD_ZERO(&readSet);
-  FD_ZERO(&writeSet);
-  FD_SET (newConnectionSocket, &readSet);
-
   // service loop
-  done = 0;
-  while (!done)
-  {
-    done += processSocketInput(newConnectionSocket, &readSet, &writeSet);
-  }
-  return 0;
+  result = service(parameters.port);
+
+  // done
+  return result;
 }
 

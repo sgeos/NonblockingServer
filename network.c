@@ -33,7 +33,7 @@
 #include "error.h"
 #include "network.h"
 
-// open a socket
+// open a socket (client & server)
 int openSocket(void)
 {
   int result;
@@ -47,7 +47,7 @@ int openSocket(void)
 }
 
 // bind a socket (server)
-void bindSocket(int pSocketFile, int pPort)
+void bindSocket(int pSocketId, int pPort)
 {
   // local variables
   struct sockaddr_in address;
@@ -59,18 +59,18 @@ void bindSocket(int pSocketFile, int pPort)
 
   // initialize data
   address.sin_family      = AF_INET;
-  address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port        = htons(pPort);
+  address.sin_addr.s_addr = htonl(INADDR_ANY);
 
   // bind
-  if (bind(pSocketFile, (struct sockaddr *)&address, size) < 0)
+  if (bind(pSocketId, (struct sockaddr *)&address, size) < 0)
   {
     FATAL_ERROR("Error on binding!");
   }
 }
 
 // connect a socket (client)
-void connectSocket(int pSocketFile, int pPort, const char *pHost)
+void connectSocket(int pSocketId, int pPort, const char *pHost)
 {
   // local variables
   struct sockaddr_in address;
@@ -92,14 +92,14 @@ void connectSocket(int pSocketFile, int pPort, const char *pHost)
   bcopy((char *)server->h_addr, (char *)&address.sin_addr.s_addr, server->h_length);
 
   // connect
-  if (connect(pSocketFile, (struct sockaddr *)&address, sizeof(address)) < 0)
+  if (connect(pSocketId, (struct sockaddr *)&address, sizeof(address)) < 0)
   {
     FATAL_ERROR("Could not connect to server.");
   }
 
   // use non-blocking socket
   int on = 1;
-  if (ioctl(pSocketFile, FIONBIO, (char *)&on) < 0)
+  if (ioctl(pSocketId, FIONBIO, (char *)&on) < 0)
   {
     FATAL_ERROR("Could not use non-binding socket.");
   }
@@ -114,7 +114,10 @@ int initServer(int pPort)
   // open / bind / listen on socket
   socketFile = openSocket();
   bindSocket(socketFile, pPort);
-  listen(socketFile, NETWORK_BACKLOG_QUEUE);
+  if (listen(socketFile, NETWORK_BACKLOG_QUEUE) < 0)
+  {
+    FATAL_ERROR("Could not listen for new client connections.");
+  }
 
   return socketFile;
 }
@@ -131,38 +134,38 @@ int initClient(int pPort, const char *pHost)
   return socketFile;
 }
 
-// get a connection
-int getConnection(int pSocketFile)
+// get a connection (server)
+int getConnection(int pSocketId)
 {
   struct sockaddr_in address;
   socklen_t          size;
   int                socketFile;
 
   size = sizeof(address);
-  socketFile = accept(pSocketFile, (struct sockaddr *)&address, &size);
+  socketFile = accept(pSocketId, (struct sockaddr *)&address, &size);
   if (socketFile < 0)
   {
-    FATAL_ERROR("Error on accept!");
+    FATAL_ERROR("Could not accept connection.");
   }
   return socketFile;
 }
 
-// send message
-void sendMessage(int pSocketFile, const char *pMessage)
+// send message (client & server)
+void sendMessage(int pSocketId, const char *pMessage)
 {
   int size   = strlen(pMessage) + 1;
-  int result = write(pSocketFile, pMessage, size);
+  int result = write(pSocketId, pMessage, size);
   if (result < 0)
   {
     FATAL_ERROR("Error writing to socket!");
   }
 }
 
-// receive message
-int receiveMessage(int pSocketFile, char *pBuffer, int pSize)
+// receive message (client & server)
+int receiveMessage(int pSocketId, char *pBuffer, int pSize)
 {
   bzero(pBuffer, pSize);
-  int result = read(pSocketFile, pBuffer, pSize - 1);
+  int result = read(pSocketId, pBuffer, pSize - 1);
   if (result < 0)
   {
     // Use receiveMessageReady() to avoid an error when using
@@ -172,16 +175,16 @@ int receiveMessage(int pSocketFile, char *pBuffer, int pSize)
   return result;
 }
 
-// returns true if the given socket has data to read
-int receiveMessageReady(int pSocketFile)
+// returns true if the given socket has data to read (client & server)
+int receiveMessageReady(int pSocketId)
 {
   fd_set socketList;
   FD_ZERO(&socketList);
-  FD_SET(pSocketFile, &socketList);
+  FD_SET(pSocketId, &socketList);
   struct timeval timeout;
   timeout.tv_sec  = 0;
   timeout.tv_usec = 0;
-  int result = select(pSocketFile + 1, &socketList, NULL, NULL, &timeout);
+  int result = select(pSocketId + 1, &socketList, NULL, NULL, &timeout);
   if (0 == result)
   {
     // no data to read
@@ -190,7 +193,7 @@ int receiveMessageReady(int pSocketFile)
   {
     FATAL_ERROR("Could not check socket for read.");
   }
-  else if (!FD_ISSET(pSocketFile, &socketList))
+  else if (!FD_ISSET(pSocketId, &socketList))
   {
     FATAL_ERROR("Could not check socket for read.");
   }
