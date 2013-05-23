@@ -110,6 +110,7 @@ int processOutput(int pSocket, char *pBuffer, int pSize)
   {
     if (0 == receiveMessage(pSocket, pBuffer, pSize))
     {
+      printf("\n");
       ERROR("Disconnected from server.");
       done = 1;
       break;
@@ -150,7 +151,7 @@ void cleanup(int pSocketFile)
 {
   terminalInputCleanUp();
   close(pSocketFile);
-  printf("\n\n");
+  printf("\n");
 }
 
 // service loop

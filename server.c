@@ -51,14 +51,14 @@ void connectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
   {
     FATAL_ERROR("Could not accept new client connection.");
   }
-  printf("Connected Client : host %s, port %hu\n", inet_ntoa(clientName.sin_addr), ntohs(clientName.sin_port));
+  printf("Connected Client : id %d, host %s, port %hu\n", newSocketId, inet_ntoa(clientName.sin_addr), ntohs(clientName.sin_port));
   FD_SET(newSocketId, pReadSet);
   FD_SET(newSocketId, pWriteSet);
 }
 
 void disconnectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
 {
-  printf("Disconnected Client : %d\n", pSocketId);
+  printf("Disconnected Client : id %d\n", pSocketId);
   close (pSocketId);
   FD_CLR(pSocketId, pReadSet);
   FD_CLR(pSocketId, pWriteSet);
@@ -203,13 +203,29 @@ int usage(int argc, char *argv[], int argn, args_param_t *args_param, void *data
 // main program     
 int main(int argc, char *argv[])
 {
+  server_param_t parameters =
+  {
+    NETWORK_DEFAULT_PORT
+  };
+  args_param_t args_param_list[] =
+  {
+    { "-p",     &parameters.port, argsInteger },
+    { "--port", &parameters.port, argsInteger },
+    { "-?",     NULL, usage                   },
+    { "--help", NULL, usage                   },
+    ARGS_DONE
+  };
   int       newConnectionSocket;
   fd_set    readSet;
   fd_set    writeSet;
   int       done;
 
+  // process command line arguments
+  argsProcess ( argc, argv, args_param_list );
+  printf ( "Port: %d\n", parameters.port );
+
   // create socket
-  newConnectionSocket = make_socket(NETWORK_DEFAULT_PORT);
+  newConnectionSocket = make_socket(parameters.port);
   if (listen(newConnectionSocket, 1) < 0)
   {
     FATAL_ERROR("Could not listen for new client connections.");
