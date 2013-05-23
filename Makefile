@@ -46,7 +46,7 @@ $(ODIR)/%.o: %.c $(DEPS)
 client : $(OBJ) $(ODIR)/client.o
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
 
-server : $(OBJ) $(ODIR)/server.o $(ODIR)/make_socket.o
+server : $(OBJ) $(ODIR)/server.o
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
 
 args : args.c $(IDIR)/args.h

@@ -36,6 +36,7 @@
 #include <arpa/inet.h>
 
 // module headers
+#include "args.h"
 #include "error.h"
 #include "message.h"
 #include "network.h"
@@ -150,11 +151,58 @@ int processSocketInput(int pNewConnectionSocket, fd_set *pReadSet, fd_set *pWrit
   }
   return done;
 }
-     
-int main(void)
-{
-  extern int make_socket(uint16_t port);
 
+int make_socket(uint16_t pPort)
+{
+  int                result;
+  struct sockaddr_in name;
+
+  // create socket
+  result = socket(PF_INET, SOCK_STREAM, 0);
+  if (result < 0)
+  {
+    perror("socket");
+    exit(EXIT_FAILURE);
+  }
+
+  // name socket
+  name.sin_family      = AF_INET;
+  name.sin_port        = htons(pPort);
+  name.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  // bind socket
+  if (bind(result, (struct sockaddr *)&name, sizeof(name)) < 0)
+  {
+    perror("bind");
+    exit(EXIT_FAILURE);
+  }
+
+  return result;
+}
+
+// service loop
+int service()
+{
+  return 0;
+}
+
+// program usage
+int usage(int argc, char *argv[], int argn, args_param_t *args_param, void *data)
+{
+  printf ( "Usage: %s [params]\n", argv[0] );
+  printf ( "    -p     <port number>\n"    );
+  printf ( "    --port <port number>\n"    );
+  printf ( "        Set port number.\n"    );
+  printf ( "    -?\n"                      );
+  printf ( "    --help\n"                  );
+  printf ( "        Print this usage.\n"   );
+  exit(0);
+  return 1;
+}
+
+// main program     
+int main(int argc, char *argv[])
+{
   int       newConnectionSocket;
   fd_set    readSet;
   fd_set    writeSet;
