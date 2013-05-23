@@ -35,15 +35,17 @@
 #define NETWORK_COMMUNICATION_BUFFER_SIZE 1024
 
 // function prototypes
-int  openSocket          (void);
-void bindSocket          (int pSocketFile, int pPort);
-int  initServer          (int pPort);
-int  initClient          (int pPort, const char *pHost);
-int  getConnection       (int pSocketFile);
-void sendMessage         (int pSocketFile, const char *pMessage);
-int  receiveMessage      (int pSocketFile, char *pBuffer, int pSize);
-void broadcastMessage    (fd_set *pSocketSet, int pSocketSetSize, const char *pMessage);
-int  receiveMessageReady (int pSocketFile);
+int          openSocket          (void);
+void         bindSocket          (int pSocketFile, int pPort);
+int          initServer          (int pPort);
+int          initClient          (int pPort, const char *pHost);
+int          getConnection       (int pSocketFile);
+void         sendMessage         (int pSocketFile, const char *pMessage);
+int          receiveMessage      (int pSocketFile, char *pBuffer, int pSize);
+void         broadcastMessage    (fd_set *pSocketSet, int pSocketSetSize, const char *pMessage);
+int          receiveMessageReady (int pSocketFile);
+const char * networkSocketHost   (int pSocketId);
+uint16_t     networkSocketPort   (int pSocketId);
 
 #endif // NETWORK_H
 

@@ -43,15 +43,6 @@
 #include "server.h"
 #include "terminalInput.h"
 
-// print client info based on socket id
-void printClientInfo(int pSocketId)
-{
-  struct sockaddr_in clientAddress;
-  socklen_t          size = sizeof(struct sockaddr_in);
-  getsockname(pSocketId, (struct sockaddr *)&clientAddress, &size);
-  printf("id %d, host %s, port %hu", pSocketId, inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port));
-}
-
 // connect client to server
 void connectClient(int pSocketId, server_state_t *pState)
 {
@@ -60,19 +51,15 @@ void connectClient(int pSocketId, server_state_t *pState)
   FD_SET(newSocketId, &(pState->readSocketSet));
   FD_SET(newSocketId, &(pState->writeSocketSet));
 
-  // need to print after disconnecting
-  printf("Connected Client : ");
-  printClientInfo(newSocketId);
-  printf("\n");
+  // need to print after connecting
+  printf("Connected Client : id %d, host %s, port %hu\n", newSocketId, networkSocketHost(newSocketId), networkSocketPort(newSocketId));
 }
 
 // disconnect client from server
 void disconnectClient(int pSocketId, server_state_t *pState)
 {
   // need to print before disconnecting
-  printf("Disconnected Client : ");
-  printClientInfo(pSocketId);
-  printf("\n");
+  printf("Disconnected Client : id %d, host %s, port %hu\n", pSocketId, networkSocketHost(pSocketId), networkSocketPort(pSocketId));
 
   // disconnect
   close (pSocketId);

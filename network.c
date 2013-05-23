@@ -23,6 +23,7 @@
  ***************************************************************/
 
 // library headers
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <strings.h>
 #include <sys/ioctl.h>
@@ -210,5 +211,23 @@ int receiveMessageReady(int pSocketId)
     FATAL_ERROR("Could not check socket for read.");
   }
   return result;
+}
+
+// get the host for a given socket
+const char *networkSocketHost(int pSocketId)
+{
+  struct sockaddr_in clientAddress;
+  socklen_t          size = sizeof(struct sockaddr_in);
+  getsockname(pSocketId, (struct sockaddr *)&clientAddress, &size);
+  return inet_ntoa(clientAddress.sin_addr);
+}
+
+// get the port for a given socket
+uint16_t networkSocketPort(int pSocketId)
+{
+  struct sockaddr_in clientAddress;
+  socklen_t          size = sizeof(struct sockaddr_in);
+  getsockname(pSocketId, (struct sockaddr *)&clientAddress, &size);
+  return ntohs(clientAddress.sin_port);
 }
 
