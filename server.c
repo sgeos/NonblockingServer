@@ -41,7 +41,9 @@
 #include "message.h"
 #include "network.h"
 #include "server.h"
+#include "terminalInput.h"
 
+// print client info based on socket id
 void printClientInfo(int pSocketId)
 {
   struct sockaddr_in clientAddress;
@@ -50,12 +52,13 @@ void printClientInfo(int pSocketId)
   printf("id %d, host %s, port %hu", pSocketId, inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port));
 }
 
-void connectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
+// connect client to server
+void connectClient(int pSocketId, server_state_t *pState)
 {
   // connect
   int newSocketId  = getConnection(pSocketId);
-  FD_SET(newSocketId, pReadSet);
-  FD_SET(newSocketId, pWriteSet);
+  FD_SET(newSocketId, &(pState->readSocketSet));
+  FD_SET(newSocketId, &(pState->writeSocketSet));
 
   // need to print after disconnecting
   printf("Connected Client : ");
@@ -63,7 +66,8 @@ void connectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
   printf("\n");
 }
 
-void disconnectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
+// disconnect client from server
+void disconnectClient(int pSocketId, server_state_t *pState)
 {
   // need to print before disconnecting
   printf("Disconnected Client : ");
@@ -72,10 +76,11 @@ void disconnectClient(int pSocketId, fd_set *pReadSet, fd_set *pWriteSet)
 
   // disconnect
   close (pSocketId);
-  FD_CLR(pSocketId, pReadSet);
-  FD_CLR(pSocketId, pWriteSet);
+  FD_CLR(pSocketId, &(pState->readSocketSet));
+  FD_CLR(pSocketId, &(pState->writeSocketSet));
 }
 
+// true if and sockets in the set have data ready to read
 int isSocketReady(fd_set *pReadSet)
 {
   struct timeval timeout;
@@ -94,105 +99,142 @@ int isSocketReady(fd_set *pReadSet)
   return result;
 }
 
-void broadcastMessage(int pSocketId, fd_set *pWriteSet, const char *pMessage)
+// broadcast message
+void forwardMessage(int pSocketId, server_state_t *pState)
 {
-  printf("Message : %s\n", pMessage);
+  fd_set broadcastSocketSet = pState->writeSocketSet;
+  char * message            = pState->writeBuffer;
+
+  // do not return message to sender
+  FD_CLR(pSocketId, &broadcastSocketSet);
+
+  // broadcast message
+  broadcastMessage(&broadcastSocketSet, FD_SETSIZE, message);
+
+  // display output
+  printf("Message : %s\n", message);
   printf("From : %d\n", pSocketId);
   printf("To :");
   int i;
   for (i = 0; i < FD_SETSIZE; i++)
   {
-    if (FD_ISSET(i, pWriteSet))
+    if (FD_ISSET(i, &broadcastSocketSet))
     {
-      if (i == pSocketId)
-      {
-        // do nothing
-      }
-      else
-      {
-        printf(" %d", i);
-        sendMessage(i, pMessage);
-      }
+      printf(" %d", i);
     }
   }
   printf("\n");
 }
 
-int readClientMessage(int pSocketId, fd_set *pWriteSet)
+// read message from client
+int readClientMessage(int pSocketId, server_state_t *pState)
 {
-  char messageBuffer[NETWORK_COMMUNICATION_BUFFER_SIZE];
-  int result = 1;
+  char * message = pState->writeBuffer;
+  int    result;
 
   if (receiveMessageReady(pSocketId))
   {
-    result = receiveMessage(pSocketId, messageBuffer, sizeof(messageBuffer));
+    result = receiveMessage(pSocketId, message, NETWORK_COMMUNICATION_BUFFER_SIZE);
     if (result)
     {
-      broadcastMessage(pSocketId, pWriteSet, messageBuffer);
+      forwardMessage(pSocketId, pState);
     }
+  }
+  else
+  {
+    // no data, no problem
+    result = 1;
   }
   return result;
 }
 
-int processSocketInput(int pNewConnectionSocket, fd_set *pReadSet, fd_set *pWriteSet)
+// process input from sockets
+void processSocketInput(server_state_t *pState)
 {
-  int done = 0;
+  fd_set loopSocketSet = pState->readSocketSet;
 
   // service all sockets
-  fd_set loopSet = *pReadSet;
-  while (isSocketReady(&loopSet))
+  while (isSocketReady(&loopSocketSet))
   {
     for (int i = 0; i < FD_SETSIZE; i++)
     {
-      if (FD_ISSET(i, &loopSet))
+      if (FD_ISSET(i, &loopSocketSet))
       {
-        if (i == pNewConnectionSocket)
+        if (i == pState->newConnectionSocket)
         {
-          connectClient(i, pReadSet, pWriteSet);
+          connectClient(i, pState);
         }
         else
         {
-          if (!readClientMessage(i, pWriteSet))
+          if (!readClientMessage(i, pState))
           {
-            disconnectClient(i, pReadSet, pWriteSet);
-            FD_CLR(i, &loopSet);
+            disconnectClient(i, pState);
+            FD_CLR(i, &loopSocketSet);
           }
         }
       }
     }
   }
-  return done;
+}
+
+// initialize server
+void init(server_param_t *pParameters, server_state_t *pState)
+{
+  // program started
+  pState->done = 0;
+
+  // create socket and connect to server
+  pState->newConnectionSocket = initServer(pParameters->port);
+
+  // initialize socket sets
+  FD_ZERO(&(pState->readSocketSet));
+  FD_ZERO(&(pState->writeSocketSet));
+  FD_SET (pState->newConnectionSocket, &(pState->readSocketSet));
+
+  // initialize buffers
+  bzero(pState->readBuffer,  NETWORK_COMMUNICATION_BUFFER_SIZE);
+  bzero(pState->writeBuffer, NETWORK_COMMUNICATION_BUFFER_SIZE);
+
+  // initialize external modules
+  terminalInputInit(TERMINAL_INPUT_DEFAULT_PROMPT, pState->readBuffer,  NETWORK_COMMUNICATION_BUFFER_SIZE);
+  terminalInputPromptDisplayUnlessEmpty();
+
+  // print startup messages
+  printf("Server started.\n");
+  printf("Port: %d\n", pParameters->port);
+}
+
+// cleanup before exiting
+void cleanup(server_state_t *pState)
+{
+  // cleanup external modules
+  terminalInputCleanUp();
+
+  // program ended
+  pState->done = pState->done ? pState->done : EXIT_SUCCESS;
+
+  // close socket
+  close(pState->newConnectionSocket);
+
+  // print message
+  printf("Server stopped.\n");
 }
 
 // service loop
-int service(int pPort)
+void service(server_state_t *pState)
 {
-  int       newConnectionSocket;
-  fd_set    readSet;
-  fd_set    writeSet;
-  int       done;
-
-  // create socket
-  newConnectionSocket = initServer(pPort);
-
-  // initialize socket sets
-  FD_ZERO(&readSet);
-  FD_ZERO(&writeSet);
-  FD_SET (newConnectionSocket, &readSet);
-
   // service loop
-  done = 0;
-  while (!done)
+  while (!pState->done)
   {
-    done += processSocketInput(newConnectionSocket, &readSet, &writeSet);
+    processSocketInput(pState);
   }
-
-  return EXIT_SUCCESS;
+  pState->done = EXIT_SUCCESS;
 }
 
 // program usage
 int usage(int argc, char *argv[], int argn, args_param_t *args_param, void *data)
 {
+  // print usage
   printf ( "Usage: %s [params]\n", argv[0] );
   printf ( "    -p     <port number>\n"    );
   printf ( "    --port <port number>\n"    );
@@ -200,6 +242,8 @@ int usage(int argc, char *argv[], int argn, args_param_t *args_param, void *data
   printf ( "    -?\n"                      );
   printf ( "    --help\n"                  );
   printf ( "        Print this usage.\n"   );
+
+  // exit program
   exit(EXIT_SUCCESS);
   return 1;
 }
@@ -207,6 +251,7 @@ int usage(int argc, char *argv[], int argn, args_param_t *args_param, void *data
 // main program     
 int main(int argc, char *argv[])
 {
+  server_state_t programState;
   server_param_t parameters =
   {
     NETWORK_DEFAULT_PORT
@@ -215,20 +260,24 @@ int main(int argc, char *argv[])
   {
     { "-p",     &parameters.port, argsInteger },
     { "--port", &parameters.port, argsInteger },
-    { "-?",     NULL, usage                   },
-    { "--help", NULL, usage                   },
+    { "-?",     &programState,    usage       },
+    { "--help", &programState,    usage       },
     ARGS_DONE
   };
-  int result;
 
   // process command line arguments
-  argsProcess ( argc, argv, args_param_list );
-  printf ( "Port: %d\n", parameters.port );
+  argsProcess(argc, argv, args_param_list);
 
-  // service loop
-  result = service(parameters.port);
+  // initialize program state
+  init(&parameters, &programState);
 
-  // done
-  return result;
+  // run service loop
+  service(&programState);
+
+  // cleanup
+  cleanup(&programState);
+
+  // exit
+  return programState.done;
 }
 

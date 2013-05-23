@@ -175,6 +175,18 @@ int receiveMessage(int pSocketId, char *pBuffer, int pSize)
   return result;
 }
 
+// broadcast message (server)
+void broadcastMessage(fd_set *pSocketSet, int pSocketSetSize, const char *pMessage)
+{
+  for (int i = 0; i < pSocketSetSize; i++)
+  {
+    if (FD_ISSET(i, pSocketSet))
+    {
+      sendMessage(i, pMessage);
+    }
+  }
+}
+
 // returns true if the given socket has data to read (client & server)
 int receiveMessageReady(int pSocketId)
 {

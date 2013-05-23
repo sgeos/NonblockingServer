@@ -32,5 +32,16 @@ typedef struct server_param_t
   int port;
 } server_param_t;
 
+// struct containing program state
+typedef struct server_state_t
+{
+  int    done;
+  int    newConnectionSocket;
+  fd_set readSocketSet;
+  fd_set writeSocketSet;
+  char   readBuffer [NETWORK_COMMUNICATION_BUFFER_SIZE];
+  char   writeBuffer[NETWORK_COMMUNICATION_BUFFER_SIZE];
+} server_state_t;
+
 #endif  // SERVER_H
 

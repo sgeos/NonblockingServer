@@ -42,6 +42,7 @@ int  initClient          (int pPort, const char *pHost);
 int  getConnection       (int pSocketFile);
 void sendMessage         (int pSocketFile, const char *pMessage);
 int  receiveMessage      (int pSocketFile, char *pBuffer, int pSize);
+void broadcastMessage    (fd_set *pSocketSet, int pSocketSetSize, const char *pMessage);
 int  receiveMessageReady (int pSocketFile);
 
 #endif // NETWORK_H
