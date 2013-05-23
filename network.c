@@ -231,3 +231,22 @@ uint16_t networkSocketPort(int pSocketId)
   return ntohs(clientAddress.sin_port);
 }
 
+// true if any sockets in the set have data ready to read
+int networkSocketReady(fd_set *pSocketSet)
+{
+  struct timeval timeout;
+  int            result;
+
+  // initialize timeout
+  timeout.tv_sec  = 0;
+  timeout.tv_usec = 0;
+
+  // check socket
+  result = select(FD_SETSIZE, pSocketSet, NULL, NULL, &timeout);
+  if (result < 0)
+  {
+    FATAL_ERROR("Could not check sockets.");
+  }
+  return result;
+}
+

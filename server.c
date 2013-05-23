@@ -67,25 +67,6 @@ void disconnectClient(int pSocketId, server_state_t *pState)
   FD_CLR(pSocketId, &(pState->writeSocketSet));
 }
 
-// true if and sockets in the set have data ready to read
-int isSocketReady(fd_set *pReadSet)
-{
-  struct timeval timeout;
-  int            result;
-
-  // initialize timeout
-  timeout.tv_sec  = 0;
-  timeout.tv_usec = 0;
-
-  // check socket
-  result = select(FD_SETSIZE, pReadSet, NULL, NULL, &timeout);
-  if (result < 0)
-  {
-    FATAL_ERROR("Could not check sockets for input.");
-  }
-  return result;
-}
-
 // broadcast message
 void forwardMessage(int pSocketId, server_state_t *pState)
 {
@@ -141,7 +122,7 @@ void processSocketInput(server_state_t *pState)
   fd_set loopSocketSet = pState->readSocketSet;
 
   // service all sockets
-  while (isSocketReady(&loopSocketSet))
+  while (networkSocketReady(&loopSocketSet))
   {
     for (int i = 0; i < FD_SETSIZE; i++)
     {

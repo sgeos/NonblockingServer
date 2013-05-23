@@ -46,6 +46,7 @@ void         broadcastMessage    (fd_set *pSocketSet, int pSocketSetSize, const 
 int          receiveMessageReady (int pSocketFile);
 const char * networkSocketHost   (int pSocketId);
 uint16_t     networkSocketPort   (int pSocketId);
+int          networkSocketReady  (fd_set *pSocketSet);
 
 #endif // NETWORK_H
 
