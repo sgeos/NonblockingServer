@@ -1,6 +1,7 @@
 args
 client
 server
+*.db
 *.o
 *.swp
 .DS_Store

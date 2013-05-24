@@ -28,14 +28,14 @@ CFLAGS = -std=c99 -Wall -I$(IDIR) -D _DEBUG
 LIBS   =
 ODIR   = ./
 LDIR   = ./
-_DEPS  = args.h error.h network.h terminalInput.h message.h
-_OBJ   = args.o error.o network.o terminalInput.o
+_DEPS  = args.h database.h error.h network.h sqlite3.h terminalInput.h message.h
+_OBJ   = args.o database.o error.o network.o sqlite3.o terminalInput.o
 
 DEPS   = $(patsubst %,$(IDIR)/%,$(_DEPS))
 OBJ    = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 .PHONY: all
-all : client server
+all : client server log.db
 
 .PHONY: rebuild
 rebuild : clean all
@@ -48,6 +48,9 @@ client : $(OBJ) $(ODIR)/client.o
 
 server : $(OBJ) $(ODIR)/server.o
 	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+
+%.db : %.sql
+	sqlite3 $@ < $<
 
 args : args.c $(IDIR)/args.h
 	gcc $(CFLAGS) -D ARGS_MAIN -o $@ $^

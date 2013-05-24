@@ -37,6 +37,7 @@
 
 // module headers
 #include "args.h"
+#include "database.h"
 #include "error.h"
 #include "message.h"
 #include "network.h"
