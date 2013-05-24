@@ -120,6 +120,7 @@ int readClientMessage(int pSocketId, server_state_t *pState)
 void processSocketInput(server_state_t *pState)
 {
   fd_set loopSocketSet = pState->readSocketSet;
+  int    printCounter  = 0;
 
   // service all sockets
   while (networkSocketReady(&loopSocketSet))
@@ -128,6 +129,10 @@ void processSocketInput(server_state_t *pState)
     {
       if (FD_ISSET(i, &loopSocketSet))
       {
+        if (0 == printCounter && !terminalInputEmpty())
+        {
+          printf("\n");
+        }
         if (i == pState->newConnectionSocket)
         {
           connectClient(i, pState);
@@ -140,7 +145,75 @@ void processSocketInput(server_state_t *pState)
             FD_CLR(i, &loopSocketSet);
           }
         }
+        printCounter++;
       }
+    }
+  }
+  if (0 < printCounter)
+  {
+    terminalInputPromptDisplayUnlessEmpty();
+  }
+}
+
+// act on user input
+void executeCommand(server_state_t *pState)
+{
+  const char * command        = pState->readBuffer;
+  int          systemSocketId = pState->newConnectionSocket;
+
+  if (0 == strcmp(command, MESSAGE_EXIT))
+  {
+    pState->done = 1;
+  }
+  else if (0 == strcmp(command, MESSAGE_NULL))
+  {
+    printf("%s %s\n", terminalInputGetPrompt(), MESSAGE_DEFAULT);
+    forwardMessage(systemSocketId, pState);
+  }
+  else
+  {
+    strncpy(pState->writeBuffer, pState->readBuffer, NETWORK_COMMUNICATION_BUFFER_SIZE);
+    forwardMessage(systemSocketId, pState);
+  }
+  terminalInputReset();
+}
+
+// process user input
+void processInput(server_state_t *pState)
+{
+  int isBufferEmpty = terminalInputEmpty();
+
+  while (terminalInputReady())
+  {
+    int clearLine = 0;
+    int c = fgetc(stdin);
+    switch (c)
+    {
+      case '\n':
+        executeCommand(pState);
+        break;
+      case '\b':
+      case 127:
+      case 224:
+        printf("\n");
+        if (clearLine)
+        {
+          terminalInputReset();
+        }
+        else
+        {
+          terminalInputBackspace();
+          terminalInputPromptDisplayUnlessEmpty();
+        }
+        break;
+      default:
+        terminalInputBufferCharacter(c);
+        if (isBufferEmpty)
+        {
+          printf("\n");
+          terminalInputPromptDisplay();
+        }
+        break;
     }
   }
 }
@@ -195,6 +268,7 @@ void service(server_state_t *pState)
   while (!pState->done)
   {
     processSocketInput(pState);
+    processInput(pState);
   }
   pState->done = EXIT_SUCCESS;
 }
