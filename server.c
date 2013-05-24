@@ -44,6 +44,27 @@
 #include "server.h"
 #include "terminalInput.h"
 
+// log message
+void logMessage(int pSocketId, server_state_t *pState)
+{
+  char * message  = pState->writeBuffer;
+  int    isSystem = (pSocketId == pState->newConnectionSocket);
+  char username[] = "User XXXXXXXXXX";
+
+  // set username
+  if (isSystem)
+  {
+    snprintf(username, sizeof(username), "System");
+  }
+  else // user
+  {
+    snprintf(username, sizeof(username), "User %d", pSocketId);
+  }
+
+  // write to database
+  database_addMessage(username, message);
+}
+
 // connect client to server
 void connectClient(int pSocketId, server_state_t *pState)
 {
@@ -93,6 +114,9 @@ void forwardMessage(int pSocketId, server_state_t *pState)
     }
   }
   printf("\n");
+
+  // log message
+  logMessage(pSocketId, pState);
 }
 
 // read message from client
@@ -240,6 +264,7 @@ void init(server_param_t *pParameters, server_state_t *pState)
   // initialize external modules
   terminalInputInit(TERMINAL_INPUT_DEFAULT_PROMPT, pState->readBuffer,  NETWORK_COMMUNICATION_BUFFER_SIZE);
   terminalInputPromptDisplayUnlessEmpty();
+  database_init();
 
   // print startup messages
   printf("Server started.\n");
@@ -251,6 +276,7 @@ void cleanup(server_state_t *pState)
 {
   // cleanup external modules
   terminalInputCleanUp();
+  database_close();
 
   // program ended
   pState->done = pState->done ? pState->done : EXIT_SUCCESS;
