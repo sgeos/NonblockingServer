@@ -55,7 +55,10 @@ server : $(OBJ) $(ODIR)/server.o
 args : args.c $(IDIR)/args.h
 	gcc $(CFLAGS) -D ARGS_MAIN -o $@ $^
 
+command : command.c $(IDIR)/command.h
+	gcc $(CFLAGS) -D COMMAND_MAIN -o $@ $^
+
 .PHONY: clean
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ client server args *.db
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ client server args command *.db
 
