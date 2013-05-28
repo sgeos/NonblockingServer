@@ -67,7 +67,8 @@ class simplePythonChatServer(Protocol):
 factory = Factory()
 factory.protocol = simplePythonChatServer
 factory.clients = []
-reactor.listenTCP(55555, factory)
+reactor.listenTCP(DEFAULT_PORT, factory)
 print "Simple Python chat server started."
+print "Port : ", DEFAULT_PORT
 reactor.run()
 
