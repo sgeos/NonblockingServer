@@ -28,8 +28,8 @@ CFLAGS = -std=c99 -Wall -I$(IDIR) -D _DEBUG
 LIBS   =
 ODIR   = ./
 LDIR   = ./
-_DEPS  = args.h database.h error.h network.h sqlite3.h terminalInput.h message.h
-_OBJ   = args.o database.o error.o network.o sqlite3.o terminalInput.o
+_DEPS  = args.h command.h database.h error.h network.h sqlite3.h terminalInput.h message.h
+_OBJ   = args.o command.o database.o error.o network.o sqlite3.o terminalInput.o
 
 DEPS   = $(patsubst %,$(IDIR)/%,$(_DEPS))
 OBJ    = $(patsubst %,$(ODIR)/%,$(_OBJ))
