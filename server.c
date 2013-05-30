@@ -37,6 +37,7 @@
 
 // module headers
 #include "args.h"
+#include "command.h"
 #include "database.h"
 #include "error.h"
 #include "message.h"
@@ -183,9 +184,49 @@ void processSocketInput(server_state_t *pState)
   }
 }
 
+// server response processing funtions
+void commandExecuteServerResponse(server_state_t *pState, const char *pCommand, int pUserId, const char *pMessage)
+{
+  char message[NETWORK_COMMUNICATION_BUFFER_SIZE];
+  snprintf(message, sizeof(message), "%s%d/%s", pCommand, pUserId, pMessage);
+  strncpy(pState->writeBuffer, message, NETWORK_COMMUNICATION_BUFFER_SIZE);
+  forwardMessage(pUserId, pState);
+}
+
+void commandExecuteMessage(server_state_t *pState, int pUserId, const char *pMessage)
+{
+  commandExecuteServerResponse(pState, MESSAGE_MESSAGE, pUserId, pMessage);
+}
+
+// user input command processing functions
+int commandScanExit(const char *pBuffer, command_param_t *pCommandParameter, void *pData)
+{
+  server_state_t * pState = (server_state_t *)pData;
+  pState->done = 1;
+  return 1;
+}
+
+int commandScanMessage(const char *pBuffer, command_param_t *pCommandParameter, void *pData)
+{
+  server_state_t * pState         = (server_state_t *)pData;
+  int              systemSocketId = pState->newConnectionSocket;
+  const char *     message        = commandMatch(pBuffer, pCommandParameter->command);
+  commandExecuteMessage(pState, systemSocketId, message);
+  return 1;
+}
+
+int commandScanDefault(const char *pBuffer, command_param_t *pCommandParameter, void *pData)
+{
+  server_state_t * pState         = (server_state_t *)pData;
+  int              systemSocketId = pState->newConnectionSocket;
+  commandExecuteMessage(pState, systemSocketId, MESSAGE_DEFAULT);
+  return 1;
+}
+
 // act on user input
 void executeCommand(server_state_t *pState)
 {
+/*
   const char * command        = pState->readBuffer;
   int          systemSocketId = pState->newConnectionSocket;
 
@@ -203,6 +244,19 @@ void executeCommand(server_state_t *pState)
     strncpy(pState->writeBuffer, pState->readBuffer, NETWORK_COMMUNICATION_BUFFER_SIZE);
     forwardMessage(systemSocketId, pState);
   }
+*/
+
+  // ------------
+  const char * command = pState->readBuffer;
+  void *       data    = (void *)pState;
+  command_param_t commandList[] =
+  {
+    {MESSAGE_EXIT,    commandScanExit,    data},
+    {MESSAGE_MESSAGE, commandScanMessage, data},
+    {MESSAGE_NULL,    commandScanDefault, data},
+    COMMAND_DONE
+  };
+  commandProcess(command, commandList);
   terminalInputReset();
 }
 
@@ -269,6 +323,9 @@ void init(server_param_t *pParameters, server_state_t *pState)
   terminalInputPromptDisplayUnlessEmpty();
   database_init();
 
+  // set echo
+  pState->echoMessage = pParameters->echoMessage;
+
   // print startup messages
   printf("Server started.\n");
   printf("Port: %d\n", pParameters->port);
@@ -308,13 +365,16 @@ void service(server_state_t *pState)
 int usage(int argc, char *argv[], int argn, args_param_t *args_param, void *data)
 {
   // print usage
-  printf ( "Usage: %s [params]\n", argv[0] );
-  printf ( "    -p     <port number>\n"    );
-  printf ( "    --port <port number>\n"    );
-  printf ( "        Set port number.\n"    );
-  printf ( "    -?\n"                      );
-  printf ( "    --help\n"                  );
-  printf ( "        Print this usage.\n"   );
+  printf ( "Usage: %s [params]\n", argv[0]                 );
+  printf ( "    -p     <port number>\n"                    );
+  printf ( "    --port <port number>\n"                    );
+  printf ( "        Set port number.\n"                    );
+  printf ( "    -e     <boolean value>\n"                  );
+  printf ( "    --echo <boolean value>\n"                  );
+  printf ( "        Echo message back to sender if true.\n");
+  printf ( "    -?\n"                                      );
+  printf ( "    --help\n"                                  );
+  printf ( "        Print this usage.\n"                   );
 
   // exit program
   exit(EXIT_SUCCESS);

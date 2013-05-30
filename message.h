@@ -28,7 +28,8 @@
 // constants
 #define MESSAGE_NULL    ""
 #define MESSAGE_DEFAULT "Hello world!"
-#define MESSAGE_EXIT    "/exit"
+#define MESSAGE_EXIT    "/exit/"
+#define MESSAGE_MESSAGE "/message/"
 
 #endif // MESSAGE_H
 
