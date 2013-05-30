@@ -45,6 +45,10 @@
 #include "server.h"
 #include "terminalInput.h"
 
+// prototypes
+void commandExecuteServerResponseLogin(server_state_t *pState, int pUserId);
+void commandExecuteServerResponseLogout(server_state_t *pState, int pUserId);
+
 // log message
 void logMessage(int pSocketId, server_state_t *pState)
 {
@@ -70,9 +74,12 @@ void logMessage(int pSocketId, server_state_t *pState)
 void connectClient(int pSocketId, server_state_t *pState)
 {
   // connect
-  int newSocketId  = getConnection(pSocketId);
+  int newSocketId = getConnection(pSocketId);
   FD_SET(newSocketId, &(pState->readSocketSet));
   FD_SET(newSocketId, &(pState->writeSocketSet));
+
+  // inform client
+  commandExecuteServerResponseLogin(pState, newSocketId);
 
   // need to print after connecting
   printf("Connected Client : id %d, host %s, port %hu\n", newSocketId, networkSocketHost(newSocketId), networkSocketPort(newSocketId));
@@ -83,6 +90,9 @@ void disconnectClient(int pSocketId, server_state_t *pState)
 {
   // need to print before disconnecting
   printf("Disconnected Client : id %d, host %s, port %hu\n", pSocketId, networkSocketHost(pSocketId), networkSocketPort(pSocketId));
+
+  // inform client
+  commandExecuteServerResponseLogout(pState, pSocketId);
 
   // disconnect
   close (pSocketId);
@@ -185,7 +195,7 @@ void processSocketInput(server_state_t *pState)
 }
 
 // server response processing funtions
-void commandExecuteServerResponse(server_state_t *pState, const char *pCommand, int pUserId, const char *pMessage)
+void commandExecuteServerBroadcast(server_state_t *pState, const char *pCommand, int pUserId, const char *pMessage)
 {
   char message[NETWORK_COMMUNICATION_BUFFER_SIZE];
   snprintf(message, sizeof(message), "%s%d/%s", pCommand, pUserId, pMessage);
@@ -193,9 +203,31 @@ void commandExecuteServerResponse(server_state_t *pState, const char *pCommand, 
   forwardMessage(pUserId, pState);
 }
 
-void commandExecuteMessage(server_state_t *pState, int pUserId, const char *pMessage)
+void commandExecuteServerResponse(server_state_t *pState, const char *pCommand, int pUserId, const char *pMessage)
 {
-  commandExecuteServerResponse(pState, MESSAGE_MESSAGE, pUserId, pMessage);
+  char message[NETWORK_COMMUNICATION_BUFFER_SIZE];
+  int systemSocketId = pState->newConnectionSocket;
+  snprintf(message, sizeof(message), "%s%d/%s", pCommand, systemSocketId, pMessage);
+  sendMessage(pUserId, message);
+}
+
+void commandExecuteServerBroadcastMessage(server_state_t *pState, int pUserId, const char *pMessage)
+{
+  commandExecuteServerBroadcast(pState, MESSAGE_COMMAND_MESSAGE, pUserId, pMessage);
+}
+
+void commandExecuteServerResponseLogin(server_state_t *pState, int pUserId)
+{
+  char message[NETWORK_COMMUNICATION_BUFFER_SIZE];
+  snprintf(message, sizeof(message), "%1$d/%2$s %1$d", pUserId, MESSAGE_DEFAULT_USERNAME);
+  commandExecuteServerResponse(pState, MESSAGE_COMMAND_LOGIN, pUserId, message);
+}
+
+void commandExecuteServerResponseLogout(server_state_t *pState, int pUserId)
+{
+  char message[NETWORK_COMMUNICATION_BUFFER_SIZE];
+  snprintf(message, sizeof(message), "%d", pUserId);
+  commandExecuteServerResponse(pState, MESSAGE_COMMAND_LOGOUT, pUserId, message);
 }
 
 // user input command processing functions
@@ -211,7 +243,19 @@ int commandScanMessage(const char *pBuffer, command_param_t *pCommandParameter, 
   server_state_t * pState         = (server_state_t *)pData;
   int              systemSocketId = pState->newConnectionSocket;
   const char *     message        = commandMatch(pBuffer, pCommandParameter->command);
-  commandExecuteMessage(pState, systemSocketId, message);
+  commandExecuteServerBroadcastMessage(pState, systemSocketId, message);
+  return 1;
+}
+
+int commandScanLogout(const char *pBuffer, command_param_t *pCommandParameter, void *pData)
+{
+  server_state_t * pState  = (server_state_t *)pData;
+  int              userId  = 0;
+  const char *     message = commandMatch(pBuffer, pCommandParameter->command);
+  sscanf(message, "%d", &userId);
+  if (0 != userId) {
+    disconnectClient(userId, pState);
+  }
   return 1;
 }
 
@@ -219,41 +263,21 @@ int commandScanDefault(const char *pBuffer, command_param_t *pCommandParameter, 
 {
   server_state_t * pState         = (server_state_t *)pData;
   int              systemSocketId = pState->newConnectionSocket;
-  commandExecuteMessage(pState, systemSocketId, MESSAGE_DEFAULT);
+  commandExecuteServerBroadcastMessage(pState, systemSocketId, MESSAGE_DEFAULT);
   return 1;
 }
 
 // act on user input
 void executeCommand(server_state_t *pState)
 {
-/*
-  const char * command        = pState->readBuffer;
-  int          systemSocketId = pState->newConnectionSocket;
-
-  if (0 == strcmp(command, MESSAGE_EXIT))
-  {
-    pState->done = 1;
-  }
-  else if (0 == strcmp(command, MESSAGE_NULL))
-  {
-    printf("%s %s\n", terminalInputGetPrompt(), MESSAGE_DEFAULT);
-    forwardMessage(systemSocketId, pState);
-  }
-  else
-  {
-    strncpy(pState->writeBuffer, pState->readBuffer, NETWORK_COMMUNICATION_BUFFER_SIZE);
-    forwardMessage(systemSocketId, pState);
-  }
-*/
-
-  // ------------
   const char * command = pState->readBuffer;
   void *       data    = (void *)pState;
   command_param_t commandList[] =
   {
-    {MESSAGE_EXIT,    commandScanExit,    data},
-    {MESSAGE_MESSAGE, commandScanMessage, data},
-    {MESSAGE_NULL,    commandScanDefault, data},
+    {MESSAGE_COMMAND_EXIT,    commandScanExit,    data},
+    {MESSAGE_COMMAND_MESSAGE, commandScanMessage, data},
+    {MESSAGE_COMMAND_LOGOUT,  commandScanLogout,  data},
+    {MESSAGE_COMMAND_DEFAULT, commandScanDefault, data},
     COMMAND_DONE
   };
   commandProcess(command, commandList);

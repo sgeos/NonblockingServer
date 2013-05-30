@@ -49,7 +49,7 @@
 int executeCommand(int pSocketFile, char *pCommand)
 {
   int done = 0;
-  if (0 == strcmp(pCommand, MESSAGE_EXIT))
+  if (0 == strcmp(pCommand, MESSAGE_COMMAND_EXIT))
   {
     done = 1;
   }

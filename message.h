@@ -25,11 +25,17 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-// constants
-#define MESSAGE_NULL    ""
-#define MESSAGE_DEFAULT "Hello world!"
-#define MESSAGE_EXIT    "/exit/"
-#define MESSAGE_MESSAGE "/message/"
+// system messages
+#define MESSAGE_NULL             ""
+#define MESSAGE_DEFAULT          "Hello world!"
+#define MESSAGE_DEFAULT_USERNAME "User"
+
+// command messages
+#define MESSAGE_COMMAND_DEFAULT "//"
+#define MESSAGE_COMMAND_EXIT    "/exit"
+#define MESSAGE_COMMAND_LOGIN   "/login/"
+#define MESSAGE_COMMAND_LOGOUT  "/logout/"
+#define MESSAGE_COMMAND_MESSAGE "/message/"
 
 #endif // MESSAGE_H
 
