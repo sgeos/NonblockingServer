@@ -26,16 +26,21 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+// constants
+#define SERVER_DEFAULT_ECHO 1
+
 // struct containing command line parameters
 typedef struct server_param_t
 {
   int port;
+  int echoMessage;
 } server_param_t;
 
 // struct containing program state
 typedef struct server_state_t
 {
   int    done;
+  int    echoMessage;
   int    newConnectionSocket;
   fd_set readSocketSet;
   fd_set writeSocketSet;

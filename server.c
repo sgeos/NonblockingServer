@@ -95,8 +95,11 @@ void forwardMessage(int pSocketId, server_state_t *pState)
   fd_set broadcastSocketSet = pState->writeSocketSet;
   char * message            = pState->writeBuffer;
 
-  // do not return message to sender
-  FD_CLR(pSocketId, &broadcastSocketSet);
+  if (!pState->echoMessage)
+  {
+    // do not return message to sender
+    FD_CLR(pSocketId, &broadcastSocketSet);
+  }
 
   // broadcast message
   broadcastMessage(&broadcastSocketSet, FD_SETSIZE, message);
@@ -269,6 +272,7 @@ void init(server_param_t *pParameters, server_state_t *pState)
   // print startup messages
   printf("Server started.\n");
   printf("Port: %d\n", pParameters->port);
+  printf("Echo: %s\n", pParameters->echoMessage ? "ON" : "OFF");
 }
 
 // cleanup before exiting
@@ -323,14 +327,17 @@ int main(int argc, char *argv[])
   server_state_t programState;
   server_param_t parameters =
   {
-    NETWORK_DEFAULT_PORT
+    NETWORK_DEFAULT_PORT,
+    SERVER_DEFAULT_ECHO
   };
   args_param_t args_param_list[] =
   {
-    { "-p",     &parameters.port, argsInteger },
-    { "--port", &parameters.port, argsInteger },
-    { "-?",     &programState,    usage       },
-    { "--help", &programState,    usage       },
+    { "-p",     &parameters.port,        argsInteger },
+    { "--port", &parameters.port,        argsInteger },
+    { "-e",     &parameters.echoMessage, argsInteger },
+    { "--echo", &parameters.echoMessage, argsInteger },
+    { "-?",     &programState,           usage       },
+    { "--help", &programState,           usage       },
     ARGS_DONE
   };
 
