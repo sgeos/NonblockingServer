@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">AndroidChatClient</string>
+    <string name="action_settings">Settings</string>
+    <string name="nullString"></string>
+    <string name="placeholder">&#8230;</string>
+    <string name="buttonJoin">Join</string>
+    <string name="buttonSend">Send</string>
+    <string name="hintJoin">Enter username.</string>
+    <string name="hintSend">Enter message.</string>
+    <string name="defaultUsername">Guest</string>
+
+</resources>
