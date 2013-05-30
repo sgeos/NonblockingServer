@@ -3,6 +3,8 @@
  * ChatActivity.java
  * 
  * The main module for a simple Android chat client.
+ * 
+ * Socket communications need to be moved into a service.
  *
  ***************************************************************
  *
