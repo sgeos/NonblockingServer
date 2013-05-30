@@ -199,7 +199,6 @@
         case NSStreamEventErrorOccurred:
             if (pStream == inputStream)
             {
-                // not being displayed
                 eventDescription = @"Error";
                 [messages insertObject:eventDescription atIndex:0];
             }
@@ -207,7 +206,6 @@
         case NSStreamEventEndEncountered:
             if (pStream == inputStream)
             {
-                // not being displayed
                 eventDescription = @"Disconnected";
                 [messages insertObject:eventDescription atIndex:0];
             }
@@ -220,6 +218,7 @@
     {
         NSLog(@"Stream Event : %@", eventDescription);
     }
+    [self.chatViewTableView reloadData];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)pTableView cellForRowAtIndexPath:(NSIndexPath *)pIndexPath
