@@ -42,6 +42,7 @@
 	[self initNetworkCommunication];
     messages = [[NSMutableArray alloc] init];
     loginComplete = false;
+    userid        = 0;
     [self relabelButton:@"Join"];
     //[self.chatViewTableView setHidden:YES];
 }
@@ -94,28 +95,57 @@
 
 - (void)receiveMessage:(NSString *)pMessage
 {
-    [messages insertObject:pMessage atIndex:0];
+    NSArray * components = [pMessage componentsSeparatedByString:@"/"];
+    if ([components count] < 2)
+    {
+        return;
+    }
+    NSString * command = [components objectAtIndex:1];
+    if ([command isEqualToString:@"login"] && (5 <= [components count]))
+    {
+        // NSInteger senderId = [(NSString *)[components objectAtIndex:2] intValue];
+        userid             = [(NSString *)[components objectAtIndex:3] intValue];
+        username           =  (NSString *)[components objectAtIndex:4];
+        NSString * message = [NSString stringWithFormat:@"User ID : %d", userid];
+        [messages insertObject:message atIndex:0];
+    }
+    if ([command isEqualToString:@"logout"])
+    {
+        exit(EXIT_SUCCESS);
+    }
+    if ([command isEqualToString:@"username"] && (5 <= [components count]))
+    {
+        // NSInteger senderId = [(NSString *)[components objectAtIndex:2] intValue];
+        NSInteger receiverId = [(NSString *)[components objectAtIndex:3] intValue];
+        if (userid == receiverId)
+        {
+            username           =  (NSString *)[components objectAtIndex:4];
+            NSString * message = [NSString stringWithFormat:@"User Name : %@", username];
+            [messages insertObject:message atIndex:0];
+            [self relabelButton:@"Send"];
+            loginComplete = true;
+        }
+    }
+    if ([command isEqualToString:@"message"] && (4 <= [components count]))
+    {
+        NSInteger  senderId   = [(NSString *)[components objectAtIndex:2] intValue];
+        NSString * rawMessage =  (NSString *)[components objectAtIndex:3];
+        NSString * message = [NSString stringWithFormat:@"User %d : %@", senderId, rawMessage];
+        [messages insertObject:message atIndex:0];
+    }
     [self.chatViewTableView reloadData];
-    // NSIndexPath *topIndexPath =
-    // [NSIndexPath indexPathForRow:messages.count - 1
-    //                    inSection:0];
-    // [self.chatViewTableView scrollToRowAtIndexPath:topIndexPath
-    //                   atScrollPosition:UITableViewScrollPositionMiddle
-    //                           animated:YES];
 }
 
 - (IBAction)joinChat:(id)pSender
 {
-    NSString * message = [NSString stringWithFormat:@"/iam/0/%@", chatViewTextField.text];
+    NSString * message = [NSString stringWithFormat:@"/username/%1$d/%1$d/%2$@", userid, chatViewTextField.text];
     [self sendMessage:message];
-    loginComplete = true;
-    [self relabelButton:@"Send"];
     //[self.chatViewTableView setHidden:NO];
 }
 
 - (IBAction)sendChatMessage:(id)pSender
 {
-    NSString * message = [NSString stringWithFormat:@"/msg/0/%@", chatViewTextField.text];
+    NSString * message = [NSString stringWithFormat:@"/message/%d/%@", userid, chatViewTextField.text];
     [self sendMessage:message];
 }
 
@@ -139,8 +169,9 @@
         case NSStreamEventOpenCompleted:
             if (pStream == inputStream)
             {
-                [self receiveMessage:@"Connected"];
-                [self receiveMessage:[[NSString alloc] initWithFormat:@"Host %@ : Port %d", host, port]];
+                [messages insertObject:@"Connected" atIndex:0];
+                [messages insertObject:[[NSString alloc] initWithFormat:@"Host %@ : Port %d", host, port]
+                               atIndex:0];
                 eventDescription = [[NSString alloc] initWithFormat:@"Connected : Host %@ : Port %d", host, port];
             }
             break;
@@ -168,15 +199,17 @@
         case NSStreamEventErrorOccurred:
             if (pStream == inputStream)
             {
+                // not being displayed
                 eventDescription = @"Error";
-                [self receiveMessage:eventDescription];
+                [messages insertObject:eventDescription atIndex:0];
             }
             break;
         case NSStreamEventEndEncountered:
             if (pStream == inputStream)
             {
+                // not being displayed
                 eventDescription = @"Disconnected";
-                [self receiveMessage:eventDescription];
+                [messages insertObject:eventDescription atIndex:0];
             }
             break;
         default:

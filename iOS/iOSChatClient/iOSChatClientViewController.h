@@ -30,6 +30,8 @@
 {
     NSString *       host;
     NSInteger        port;
+    NSInteger        userid;
+    NSString *       username;
     NSInputStream *  inputStream;
     NSOutputStream * outputStream;
     NSMutableArray * messages;
