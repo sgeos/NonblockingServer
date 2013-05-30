@@ -33,6 +33,6 @@ public class ChatPreferenceActivity extends PreferenceActivity {
   public void onCreate(Bundle savedInstanceState) {
 	  // TODO implement preferences
       super.onCreate(savedInstanceState);
-      addPreferencesFromResource(R.xml.preferences);
+      // addPreferencesFromResource(R.xml.preferences);
   }
 } 
