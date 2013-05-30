@@ -31,11 +31,12 @@
 #define MESSAGE_DEFAULT_USERNAME "User"
 
 // command messages
-#define MESSAGE_COMMAND_DEFAULT "//"
-#define MESSAGE_COMMAND_EXIT    "/exit"
-#define MESSAGE_COMMAND_LOGIN   "/login/"
-#define MESSAGE_COMMAND_LOGOUT  "/logout/"
-#define MESSAGE_COMMAND_MESSAGE "/message/"
+#define MESSAGE_COMMAND_DEFAULT  "//"
+#define MESSAGE_COMMAND_EXIT     "/exit"
+#define MESSAGE_COMMAND_LOGIN    "/login/"
+#define MESSAGE_COMMAND_LOGOUT   "/logout/"
+#define MESSAGE_COMMAND_USERNAME "/username/"
+#define MESSAGE_COMMAND_MESSAGE  "/message/"
 
 #endif // MESSAGE_H
 

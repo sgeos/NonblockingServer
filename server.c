@@ -208,6 +208,11 @@ void commandExecuteServerResponse(server_state_t *pState, const char *pCommand, 
   char message[NETWORK_COMMUNICATION_BUFFER_SIZE];
   int systemSocketId = pState->newConnectionSocket;
   snprintf(message, sizeof(message), "%s%d/%s", pCommand, systemSocketId, pMessage);
+
+  printf("Message : %s\n", message);
+  printf("From : %d\n", systemSocketId);
+  printf("To : %d\n", pUserId);
+
   sendMessage(pUserId, message);
 }
 
@@ -230,6 +235,13 @@ void commandExecuteServerResponseLogout(server_state_t *pState, int pUserId)
   commandExecuteServerResponse(pState, MESSAGE_COMMAND_LOGOUT, pUserId, message);
 }
 
+void commandExecuteServerResponseUsername(server_state_t *pState, int pUserId, const char *pUsername)
+{
+  char message[NETWORK_COMMUNICATION_BUFFER_SIZE];
+  snprintf(message, sizeof(message), "%d/%s", pUserId, pUsername);
+  commandExecuteServerResponse(pState, MESSAGE_COMMAND_USERNAME, pUserId, message);
+}
+
 // user input command processing functions
 int commandScanExit(const char *pBuffer, command_param_t *pCommandParameter, void *pData)
 {
@@ -244,6 +256,19 @@ int commandScanMessage(const char *pBuffer, command_param_t *pCommandParameter, 
   int              systemSocketId = pState->newConnectionSocket;
   const char *     message        = commandMatch(pBuffer, pCommandParameter->command);
   commandExecuteServerBroadcastMessage(pState, systemSocketId, message);
+  return 1;
+}
+
+int commandScanUsername(const char *pBuffer, command_param_t *pCommandParameter, void *pData)
+{
+  server_state_t * pState         = (server_state_t *)pData;
+  int              userId  = 0;
+  char             username[NETWORK_COMMUNICATION_BUFFER_SIZE] = MESSAGE_NULL;
+  const char *     message        = commandMatch(pBuffer, pCommandParameter->command);
+  if (2 <= sscanf(message, "%d/%s", &userId, username))
+  {
+    commandExecuteServerResponseUsername(pState, userId, username);
+  }
   return 1;
 }
 
@@ -274,10 +299,11 @@ void executeCommand(server_state_t *pState)
   void *       data    = (void *)pState;
   command_param_t commandList[] =
   {
-    {MESSAGE_COMMAND_EXIT,    commandScanExit,    data},
-    {MESSAGE_COMMAND_MESSAGE, commandScanMessage, data},
-    {MESSAGE_COMMAND_LOGOUT,  commandScanLogout,  data},
-    {MESSAGE_COMMAND_DEFAULT, commandScanDefault, data},
+    {MESSAGE_COMMAND_EXIT,     commandScanExit,     data},
+    {MESSAGE_COMMAND_MESSAGE,  commandScanMessage,  data},
+    {MESSAGE_COMMAND_USERNAME, commandScanUsername, data},
+    {MESSAGE_COMMAND_LOGOUT,   commandScanLogout,   data},
+    {MESSAGE_COMMAND_DEFAULT,  commandScanDefault,  data},
     COMMAND_DONE
   };
   commandProcess(command, commandList);
